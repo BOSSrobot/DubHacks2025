@@ -46,8 +46,10 @@ const FineTuneItem = ({ modelName, timestamp, isSelected, onClick}: {
 }) => (
   <div 
     onClick={onClick}
-    className={`mx-2 my-2 p-3 bg-white border rounded-lg hover:border-gray-300 hover:shadow-sm cursor-pointer transition-all duration-200 ${
-      isSelected ? 'border-gray-800 bg-gray-50' : 'border-gray-200'
+    className={`mx-2 my-2 p-3 bg-white border rounded-lg cursor-pointer transition-all duration-200 ${
+      isSelected 
+        ? 'border-gray-600 bg-gray-50 shadow-sm' 
+        : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
     }`}
   >
     <div className="flex items-center justify-between">
@@ -88,6 +90,9 @@ const page = () => {
   const [progress, setProgress] = useState(0)
   const [showSuccess, setShowSuccess] = useState(false)
 
+  // Check if selected model is a base model
+  const isBaseModel = baseModels.some(model => model.modelName === selectedModel)
+
   useEffect(() => {
     fetch('http://localhost:8080/api/abtests')
       .then(response => response.json())
@@ -107,13 +112,15 @@ const page = () => {
       .catch(error => console.error('Error fetching fine tunes:', error))
   }, [])
 
-  // Fetch loss data whenever selected model changes
+  // Fetch loss data whenever selected model changes (only for tuned models)
   useEffect(() => {
-    fetch(`http://localhost:8080/api/lossdata?model=${selectedModel}`)
-      .then(response => response.json())
-      .then(data => setLossData(data))
-      .catch(error => console.error('Error fetching loss data:', error))
-  }, [selectedModel])
+    if (!isBaseModel) {
+      fetch(`http://localhost:8080/api/lossdata?model=${selectedModel}`)
+        .then(response => response.json())
+        .then(data => setLossData(data))
+        .catch(error => console.error('Error fetching loss data:', error))
+    }
+  }, [selectedModel, isBaseModel])
 
   const handleFineTune = () => {
     setIsTraining(true)
@@ -166,6 +173,8 @@ const page = () => {
                   modelName={model.modelName} 
                   timestamp={model.timestamp}
                   status={model.status}
+                  isSelected={selectedModel === model.modelName}
+                  onClick={() => setSelectedModel(model.modelName)}
                 />
               ))}
             </div>
@@ -221,31 +230,41 @@ const page = () => {
                   <h2 className="text-xl font-light text-gray-900">Loss Function</h2>
                   <p className="text-sm font-light text-gray-500 mt-1">{selectedModel}</p>
                 </div>
-                <div className="bg-green-50 text-green-700 px-4 py-2 rounded-md font-light text-base border border-green-200">
-                  Loss: {lossData.length > 0 ? lossData[lossData.length - 1].loss : 0}
+                <div className={`px-4 py-2 rounded-md font-light text-base border ${
+                  isBaseModel 
+                    ? 'bg-gray-50 text-gray-500 border-gray-200' 
+                    : 'bg-green-50 text-green-700 border-green-200'
+                }`}>
+                  Loss: {isBaseModel ? '--' : (lossData.length > 0 ? lossData[lossData.length - 1].loss : 0)}
                 </div>
               </div>
               <div className="w-full h-76 p-6 pr-12">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={lossData}>
-                    <XAxis dataKey="epoch" tick={false} />
-                    <YAxis domain={['dataMin - 0.2', 'dataMax + 0.2']} tick={false}  axisLine={false} />
-                    <Line type="monotone" dataKey="loss" stroke="#141414" strokeWidth={1} />
-                    <Tooltip content={({ payload }) => {
-                      if (payload && payload.length > 0) {
-                        return (
-                          <div className="bg-white border border-gray-300 p-2 rounded">
-                            <p className="text-gray-900 text-sm">
-                              <span className="font-medium">Epoch:</span> {payload[0].payload.epoch}<br />
-                              <span className="font-medium">Loss:</span> {payload[0].value}
-                            </p>
-                          </div>
-                        );
-                      }
-                      return null;
-                    }} />
-                  </LineChart>
-                </ResponsiveContainer>
+                {isBaseModel ? (
+                  <div className="h-full flex items-center justify-center">
+                    <p className="text-gray-500 font-light text-lg">Foundational Models Do Not Have Loss Function</p>
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={lossData}>
+                      <XAxis dataKey="epoch" tick={false} />
+                      <YAxis domain={['dataMin - 0.2', 'dataMax + 0.2']} tick={false}  axisLine={false} />
+                      <Line type="monotone" dataKey="loss" stroke="#141414" strokeWidth={1} />
+                      <Tooltip content={({ payload }) => {
+                        if (payload && payload.length > 0) {
+                          return (
+                            <div className="bg-white border border-gray-300 p-2 rounded">
+                              <p className="text-gray-900 text-sm">
+                                <span className="font-medium">Epoch:</span> {payload[0].payload.epoch}<br />
+                                <span className="font-medium">Loss:</span> {payload[0].value}
+                              </p>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
               </div>
             </div>
 
