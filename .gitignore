@@ -5,3 +5,4 @@ unsloth_compiled_cache
 wandb
 .env.local
 trainer_output
+plzwork
