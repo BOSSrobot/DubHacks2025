@@ -4,6 +4,8 @@ import requests
 import os
 import sys
 import datetime
+import signal
+import psutil
 
 class VLLMServerConda:
     def __init__(self, model_name, model_path, log_file_path, conda_env_name="vllm", host="0.0.0.0", port=8002, cuda_visible_devices="1"):
@@ -93,7 +95,8 @@ class VLLMServerConda:
             env=env,
             stdout=self.log_file_handle,
             stderr=subprocess.STDOUT,  # Redirect stderr to stdout so all output goes to log
-            text=True
+            text=True,
+            start_new_session=True  # Create new process group for proper cleanup
         )
         
         # Wait for server to be ready
@@ -123,22 +126,109 @@ class VLLMServerConda:
         raise TimeoutError("Server failed to start within timeout period")
     
     def stop(self):
-        """Stop the server"""
-        if self.process:
-            print("Stopping vLLM server...")
-            self.process.terminate()
+        """Stop the server and all related processes"""
+        if not self.process:
+            print("No process to stop")
+            return
+        
+        print("Stopping vLLM server...")
+        
+        try:
+            # Get the process group ID
+            pgid = os.getpgid(self.process.pid)
+            
+            # First, try graceful termination of the entire process group
+            print(f"Terminating process group {pgid}...")
+            os.killpg(pgid, signal.SIGTERM)
+            
+            # Wait for graceful shutdown
             try:
-                self.process.wait(timeout=30)
-                print("✓ Server stopped")
+                self.process.wait(timeout=15)
+                print("✓ Server gracefully stopped")
             except subprocess.TimeoutExpired:
-                print("Force killing server...")
-                self.process.kill()
-                self.process.wait()
+                print("Graceful shutdown timed out, force killing...")
+                
+                # Force kill the entire process group
+                try:
+                    os.killpg(pgid, signal.SIGKILL)
+                    self.process.wait(timeout=10)
+                    print("✓ Server force killed")
+                except (ProcessLookupError, subprocess.TimeoutExpired):
+                    print("⚠ Process group already terminated or unresponsive")
+        
+        except (ProcessLookupError, OSError) as e:
+            # Process might already be dead
+            print(f"Process cleanup: {e}")
+            try:
+                self.process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                pass
+        
+        # Additional cleanup: kill any remaining vLLM processes on this port
+        self._cleanup_port_processes()
+        
+        # GPU memory cleanup
+        self._cleanup_gpu_memory()
+        
+        # Verify port is available
+        self._verify_port_available()
         
         # Close log file handle if open
         if self.log_file_handle and not self.log_file_handle.closed:
             self.log_file_handle.write(f"\n=== vLLM Server Stopped at {datetime.datetime.now()} ===\n")
             self.log_file_handle.close()
+    
+    def _cleanup_port_processes(self):
+        """Kill any processes still using our port"""
+        try:
+            for conn in psutil.net_connections():
+                if conn.laddr.port == self.port and conn.status == psutil.CONN_LISTEN:
+                    try:
+                        proc = psutil.Process(conn.pid)
+                        if 'vllm' in proc.name().lower() or 'python' in proc.name().lower():
+                            print(f"Killing process {conn.pid} using port {self.port}")
+                            proc.terminate()
+                            try:
+                                proc.wait(timeout=5)
+                            except psutil.TimeoutExpired:
+                                proc.kill()
+                    except (psutil.NoSuchProcess, psutil.AccessDenied):
+                        pass
+        except Exception as e:
+            print(f"Port cleanup warning: {e}")
+    
+    def _cleanup_gpu_memory(self):
+        """Clear GPU memory allocated by this process"""
+        if self.cuda_visible_devices:
+            try:
+                # Use nvidia-smi to reset GPU memory if available
+                result = subprocess.run(
+                    ['nvidia-smi', '--gpu-reset', '-i', str(self.cuda_visible_devices)],
+                    capture_output=True, text=True, timeout=10
+                )
+                if result.returncode == 0:
+                    print(f"✓ GPU {self.cuda_visible_devices} memory cleared")
+                else:
+                    print(f"GPU reset warning: {result.stderr}")
+            except (subprocess.TimeoutExpired, FileNotFoundError, subprocess.SubprocessError) as e:
+                print(f"GPU cleanup warning: {e}")
+    
+    def _verify_port_available(self):
+        """Verify that the port is now available"""
+        try:
+            # Try to connect to the port to see if anything is still listening
+            import socket
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(1)
+            result = sock.connect_ex((self.host, self.port))
+            sock.close()
+            
+            if result == 0:
+                print(f"⚠ Warning: Port {self.port} still appears to be in use")
+            else:
+                print(f"✓ Port {self.port} is now available")
+        except Exception as e:
+            print(f"Port verification warning: {e}")
     
     def get_logs(self):
         """Get server logs from log file"""

@@ -160,9 +160,19 @@ def _start_model_sync(log_file_path, model_config: ModelConfig):
         # stop previous if running
         if current_inference_process is not None:
             try:
+                print(f"Stopping previous inference process (PID: {current_inference_process.process.pid if current_inference_process.process else 'unknown'})")
                 current_inference_process.stop()
-            except Exception:
-                pass
+                print("Previous inference process stopped successfully")
+            except Exception as e:
+                print(f"Error stopping previous inference process: {e}")
+                # Force cleanup
+                try:
+                    if current_inference_process.process and current_inference_process.process.poll() is None:
+                        current_inference_process.process.kill()
+                        current_inference_process.process.wait()
+                        print("Force killed previous process")
+                except Exception as kill_error:
+                    print(f"Error force killing process: {kill_error}")
 
         proc = VLLMServerConda(
             model_name=model_config.model_name,
@@ -520,6 +530,32 @@ async def get_recent_inference_logs(lines: int = Query(50, ge=1, le=1000)):
         else:
             return {"logs": "No inference process active", "lines": 0, "log_file": None}
 
+@app.post("/stop_inference")
+async def stop_inference_server():
+    """Force stop the current inference server"""
+    global current_inference_process, model_status, status_detail
+    
+    with status_lock:
+        if not current_inference_process:
+            return {"message": "No inference process running", "status": "idle"}
+        
+        process_info = f"PID: {current_inference_process.process.pid if current_inference_process.process else 'unknown'}"
+        
+        try:
+            print(f"Force stopping inference process ({process_info})")
+            current_inference_process.stop()
+            current_inference_process = None
+            model_status = ModelStatus.idle
+            status_detail = "Manually stopped"
+            print("Inference process force stopped successfully")
+            return {"message": f"Inference server stopped successfully ({process_info})", "status": "stopped"}
+        except Exception as e:
+            error_msg = f"Error stopping inference process: {e}"
+            print(error_msg)
+            status_detail = error_msg
+            model_status = ModelStatus.error
+            return {"message": error_msg, "status": "error", "error": str(e)}
+
 
 # ========= Migrated Flask helpers → FastAPI =========
 def extract_differences(option1: str, option2: str) -> str:
@@ -588,6 +624,7 @@ def transform_ab_test_data(raw_data_list: List[dict], dataset_paths: List[str]) 
         datasets.append({
             'id': len(datasets) + 1,
             'name': f'Dataset {name}',
+            'path': dataset_paths[i],
             'description': f'Dataset for optimizing the model for generating {name}',
             'totalTests': len(tests),
             'avgImprovement': avg_improvement,
