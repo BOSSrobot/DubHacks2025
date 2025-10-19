@@ -112,12 +112,12 @@ def create_experiment(api_key: str, name: str, description: str, groups: list):
 command_prompt = """
 Creates and automatically starts a new Statsig experiment. The experiment will be created and then immediately started so it can run in your webapp. 
 For the name, use either the component you are modifying (e.g., 'button') or the general idea behind the test (e.g., 'selling') in kebab-case format. 
-Focus on changing only ONE parameter value per experiment (e.g., only color OR only text, not both).
+CRITICAL: Change ONLY ONE parameter across all groups (e.g., ONLY color OR ONLY text, never multiple parameters).
 Group sizes are automatically calculated and distributed evenly (e.g., 2 groups = 50%/50%, 3 groups = 33%/33%/34%).
 Description should describe what the experiment is testing for. 
 groups should be a list of dictionaries corresponding to each group. Each dictionary should contain: 
 name - A string describing what the group is
-description - A string of code representing what the component would look like if directly passed parameter values
+description - MUST BE ACTUAL CODE/HTML - NOT text description. Provide the exact code snippet that would render when this group's parameters are applied
 parameterValues -  A dictionary containing all the parameters and their corresponding values
 """
 
@@ -148,7 +148,7 @@ tools = [
                             },
                             "description": {
                                 "type": "string",
-                                "description": "A string of code or text describing what the component would look like when this group's parameters are applied."
+                                "description": "MUST BE ACTUAL CODE/HTML - NOT text description. Provide the exact code snippet that would render when this group's parameters are applied (e.g., '<button style=\"color: blue\">Click me</button>')."
                             },
                             "parameterValues": {
                                 "type": "object",
