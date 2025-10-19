@@ -1,4 +1,5 @@
 import os
+import json
 import requests
 from typing import Optional, Dict, Any
 from dotenv import load_dotenv
@@ -179,13 +180,13 @@ def get_experiment_pairs(experiment_name: str, params_to_absolute_count, experim
     else:
         final_pairs.append((options[0], options[1]))
 
-    print(f"Final pairs: {final_pairs}")
+    # print(f"Final pairs: {final_pairs}")
     
     dataset_pairs = []
     for pair in final_pairs:
         first_option = pair[0]
         second_option = pair[1]
-        print(f"First option: {first_option} - Second option: {second_option}")
+        # print(f"First option: {first_option} - Second option: {second_option}")
         first_params = description_to_params[first_option]
         second_params = description_to_params[second_option]
         # print(f"First params: {tuple(sorted(first_params.items()))} - Second params: {tuple(sorted(second_params.items()))}")
@@ -194,7 +195,7 @@ def get_experiment_pairs(experiment_name: str, params_to_absolute_count, experim
         second_score = params_to_absolute_count.get(second_params, 0)
         total = first_score + second_score
         if total == 0:
-            print(f"Total is 0 for {first_option} and {second_option}")
+            # print(f"Total is 0 for {first_option} and {second_option}")
             continue
         dataset_pairs.append({
             "first_option": first_option,
@@ -208,8 +209,37 @@ whitelist_experiments = [
     "experiment_-90156b26-0064-47b1-90aa-1705ee162d32"
 ]
 
+hardcoded_experiment_to_category = {
+    "experiment_-90156b26-0064-47b1-90aa-1705ee162d32": "buy_button"
+}
+
+def get_saved_categories():
+    """Scan the ../datasets directory for JSON files and extract category names."""
+    datasets_dir = os.path.join(os.path.dirname(__file__), '..', 'datasets')
+    saved_categories = []
+    
+    if not os.path.exists(datasets_dir):
+        print(f"Datasets directory not found: {datasets_dir}")
+        return saved_categories
+    
+    try:
+        for filename in os.listdir(datasets_dir):
+            if filename.endswith('_dataset.json'):
+                # Extract category name from filename
+                category_name = filename.replace('_dataset.json', '')
+                saved_categories.append(category_name)
+                # print(f"Found saved category: {category_name}")
+    except Exception as e:
+        print(f"Error scanning datasets directory: {e}")
+    
+    return saved_categories
+
+already_saved_categories = get_saved_categories()
+# print(f"Already saved categories: {already_saved_categories}")
+
 # should aggregate all the events into categories with a name and pairwise 
 def aggregate_into_categories(event_list):
+    from google import genai
     # save_directory = "pairs_datasets"
     # save_path = f"{experiment_category}_pairs_dataset.json"
     category_to_experiments = {}
@@ -249,12 +279,42 @@ def aggregate_into_categories(event_list):
     
     print("\n\n -------------------------- \n\n")
     
-    pairs_dataset = []
     for category, experiment_name in category_to_experiments.items():
+        pairs_dataset = []
+        if category in already_saved_categories:
+            continue
         for experiment in experiment_name:
             if experiment in whitelist_experiments:
+                if experiment in hardcoded_experiment_to_category:
+                    category = hardcoded_experiment_to_category[experiment]
                 print(f"Getting pairs for experiment: {experiment}")
                 pairs_dataset.extend(get_experiment_pairs(experiment, params_to_absolute_count, experiment_to_params))
+            
+        if category in already_saved_categories:
+            print(f"Category {category} already saved, skipping")
+            continue
+
+        if len(pairs_dataset) > 0:
+            example_pairs = []
+            for i in range(min(len(pairs_dataset), 2)):
+                example_pairs.append(pairs_dataset[i])
+            prompt_generation_prompt = f"I have a dataset of pairs, each pair is a different way of generating the same component, page, or UI element of a web page. Disregard the differences between the pairs, generate the prompt that could be used to generate these pairs.\nExample: Given: <title>Buy Now</title> and <title>Get My Husky Hoodie</title>\nPrompt: 'generate a title for a shopping page'.\n\nHere is the dataset of pairs. Generate ONLY the prompt that could be used to generate these pairs. Focus on the purpose of the page/component/element, not the specific content or technical details. Given:\n{example_pairs}\nPrompt:"
+            client = genai.Client(api_key=os.getenv('GOOGLE_API_KEY'))
+            response = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=[prompt_generation_prompt]
+            )
+            prompt = response.text.strip()
+            print(f"Prompt: {prompt}")
+            for i in range(len(pairs_dataset)):
+                pairs_dataset[i]["prompt"] = prompt
+
+            # print(f"Pairs dataset: {pairs_dataset}")
+
+            save_path = f"/home/user/projects/DubHacks2025/datasets/{category}_dataset.json"
+            with open(save_path, 'w') as f:
+                json.dump(pairs_dataset, f)
+            print(f"Saved pairs dataset to {save_path}")
 
     return pairs_dataset
 
@@ -281,10 +341,10 @@ if __name__ == "__main__":
         # print(f"\n✓ Successfully retrieved event list")
         # print(f"Number of events: {len(event_list)}")
 
-        pairs_dataset = aggregate_into_categories(event_list)
-        print(f"Number of pairs dataset: {len(pairs_dataset)}")
-        for pair in pairs_dataset:
-            print(pair)
+        aggregate_into_categories(event_list)
+        # print(f"Number of pairs dataset: {len(pairs_dataset)}")
+        # for pair in pairs_dataset:
+        #     print(pair)
             
         # except ValueError as e:
         #     print(f"⚠ No event list available: {e}")
