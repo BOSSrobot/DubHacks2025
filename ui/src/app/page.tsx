@@ -146,13 +146,19 @@ const page = () => {
         {/* Center Panel - Graph and Fine Tune */}
         <div className="flex-1 flex flex-col bg-white">
           {/* Loss Function Chart */}
-          <div className="flex-1 border-b border-gray-300">
-            <h2 className="text-xl font-light text-gray-900 p-4 border-b border-gray-300">Loss Function</h2>
-            <div className="w-full h-1/2 py-4 pr-16">
+          <div className="flex-1 m-4">
+            <div className="bg-white border border-gray-300 h-full">
+              <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                <h2 className="text-xl font-light text-gray-900">Loss Function</h2>
+                <div className="bg-green-100 text-green-700 px-4 py-1.5 rounded font-light text-lg">
+                  Loss: {lossData[lossData.length - 1].loss}
+                </div>
+              </div>
+              <div className="w-full h-[calc(100%-72px)] p-4 pr-16">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={lossData}>
                   <XAxis dataKey="epoch" tick={false} />
-                  <YAxis domain={['dataMin - 0.2', 'dataMax + 0.2']} tick={false} axisLine={false} />
+                  <YAxis domain={['dataMin - 0.2', 'dataMax + 0.2']} tick={false}  axisLine={false} />
                   <Line type="monotone" dataKey="loss" stroke="#000000" strokeWidth={1} />
                   <Tooltip content={({ payload }) => {
                     if (payload && payload.length > 0) {
@@ -169,44 +175,47 @@ const page = () => {
                   }} />
                 </LineChart>
               </ResponsiveContainer>
+              </div>
             </div>
           </div>
 
           {/* Fine Tune Control */}
-          <div className="p-4 border-b border-gray-300">
-            <div className="space-y-3">
-              <p className="text-sm font-light text-center h-5">
-                {isTraining && (
-                  <span className="text-gray-600">
-                    Tuning model: {progress}%
-                  </span>
-                )}
-                {showSuccess && (
-                  <span className="text-green-600 font-light">
-                    flywheel-v1.5 is ready to use!
-                  </span>
-                )}
-                {!isTraining && !showSuccess && (
-                  <span className="text-gray-500">
-                    Ready to tune...
-                  </span>
-                )}
-              </p>
-            
-              {/* Progress Bar */}
-              <div className="w-full bg-gray-200 h-2 overflow-hidden rounded-lg">
-                <div 
-                  className="bg-gray-700 h-2 transition-all duration-200 ease-out rounded-lg"
-                  style={{ width: `${progress}%` }}
-                />
+          <div className="mx-4 mb-4">
+            <div className="bg-white border border-gray-300 p-4">
+              <div className="space-y-3">
+                <p className="text-sm font-light text-center h-5">
+                  {isTraining && (
+                    <span className="text-gray-600">
+                      Tuning model: {progress}%
+                    </span>
+                  )}
+                  {showSuccess && (
+                    <span className="text-green-600 font-light">
+                      flywheel-v1.5 is ready to use!
+                    </span>
+                  )}
+                  {!isTraining && !showSuccess && (
+                    <span className="text-gray-500">
+                      Ready to tune...
+                    </span>
+                  )}
+                </p>
+              
+                {/* Progress Bar */}
+                <div className="w-full bg-gray-200 h-2 overflow-hidden rounded-lg">
+                  <div 
+                    className="bg-gray-700 h-2 transition-all duration-200 ease-out rounded-lg"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+                <button 
+                  onClick={handleFineTune}
+                  disabled={isTraining}
+                  className="w-full bg-black text-white py-3 font-light rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isTraining ? 'Tuning...' : 'Fine Tune'}
+                </button>
               </div>
-              <button 
-                onClick={handleFineTune}
-                disabled={isTraining}
-                className="w-full bg-black text-white py-3 font-light  rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isTraining ? 'Tuning...' : 'Fine Tune'}
-              </button>
             </div>
           </div>
         </div>
