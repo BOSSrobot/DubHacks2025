@@ -16,13 +16,57 @@ def double_number():
 
 @app.route('/api/abtests', methods=['GET'])
 def get_ab_tests():
-    ab_tests = [
-        { 'id': 1, 'name': 'Hero CTA Button', 'variant': 'A vs B', 'winner': 'B', 'improvement': '+12.3%', 'conversions': 287, 'visitors': 2431 },
-        { 'id': 2, 'name': 'Navigation Layout', 'variant': 'A vs B', 'winner': 'A', 'improvement': '+8.7%', 'conversions': 412, 'visitors': 4102 },
-        { 'id': 3, 'name': 'Color Scheme', 'variant': 'A vs B', 'winner': 'B', 'improvement': '+15.2%', 'conversions': 198, 'visitors': 1823 },
-        { 'id': 4, 'name': 'Pricing Display', 'variant': 'A vs B', 'winner': 'B', 'improvement': '+9.4%', 'conversions': 121, 'visitors': 1089 },
+    test_groups = [
+        { 
+            'id': 1, 
+            'name': 'Ecommerce Tests', 
+            'description': 'Tests related to purchase flow and conversion',
+            'totalTests': 4,
+            'avgImprovement': '+11.2%',
+            'tests': [
+                { 'id': 101, 'name': 'Buy Button Text', 'variant': 'A vs B', 'winner': 'B', 'improvement': '+12.3%', 'conversions': 287, 'visitors': 2431, 'status': 'active' },
+                { 'id': 102, 'name': 'Form Size', 'variant': 'Short vs Long', 'winner': 'A', 'improvement': '+8.7%', 'conversions': 412, 'visitors': 4102, 'status': 'active' },
+                { 'id': 103, 'name': 'Product Image Layout', 'variant': 'Grid vs Carousel', 'winner': 'B', 'improvement': '+15.2%', 'conversions': 198, 'visitors': 1823, 'status': 'completed' },
+                { 'id': 104, 'name': 'Checkout Button Color', 'variant': 'Green vs Blue', 'winner': 'A', 'improvement': '+9.1%', 'conversions': 334, 'visitors': 2987, 'status': 'completed' },
+            ]
+        },
+        { 
+            'id': 2, 
+            'name': 'Navigation & UX Tests', 
+            'description': 'Tests for site navigation and user experience',
+            'totalTests': 3,
+            'avgImprovement': '+6.8%',
+            'tests': [
+                { 'id': 201, 'name': 'Menu Layout', 'variant': 'Hamburger vs Full', 'winner': 'B', 'improvement': '+7.2%', 'conversions': 523, 'visitors': 5103, 'status': 'active' },
+                { 'id': 202, 'name': 'Search Bar Position', 'variant': 'Top vs Side', 'winner': 'A', 'improvement': '+5.4%', 'conversions': 289, 'visitors': 3421, 'status': 'completed' },
+                { 'id': 203, 'name': 'Breadcrumb Style', 'variant': 'Text vs Icons', 'winner': 'B', 'improvement': '+7.8%', 'conversions': 167, 'visitors': 1567, 'status': 'completed' },
+            ]
+        },
+        { 
+            'id': 3, 
+            'name': 'Content & Messaging Tests', 
+            'description': 'Tests for headlines, copy, and messaging',
+            'totalTests': 3,
+            'avgImprovement': '+10.3%',
+            'tests': [
+                { 'id': 301, 'name': 'Hero Headline', 'variant': 'Benefit vs Feature', 'winner': 'A', 'improvement': '+14.2%', 'conversions': 445, 'visitors': 3892, 'status': 'active' },
+                { 'id': 302, 'name': 'CTA Copy', 'variant': 'Short vs Long', 'winner': 'B', 'improvement': '+8.9%', 'conversions': 312, 'visitors': 2765, 'status': 'completed' },
+                { 'id': 303, 'name': 'Value Proposition', 'variant': 'A vs B', 'winner': 'A', 'improvement': '+7.8%', 'conversions': 234, 'visitors': 2109, 'status': 'completed' },
+            ]
+        },
+        { 
+            'id': 4, 
+            'name': 'Pricing & Plans Tests', 
+            'description': 'Tests for pricing display and plan presentation',
+            'totalTests': 2,
+            'avgImprovement': '+13.1%',
+            'tests': [
+                { 'id': 401, 'name': 'Pricing Display', 'variant': 'Monthly vs Annual First', 'winner': 'B', 'improvement': '+15.2%', 'conversions': 198, 'visitors': 1823, 'status': 'active' },
+                { 'id': 402, 'name': 'Plan Comparison Table', 'variant': 'Simple vs Detailed', 'winner': 'A', 'improvement': '+11.0%', 'conversions': 156, 'visitors': 1432, 'status': 'completed' },
+            ]
+        },
     ]
-    return jsonify(ab_tests)
+    return jsonify(test_groups)
 
 @app.route('/api/basemodels', methods=['GET'])
 def get_base_models():

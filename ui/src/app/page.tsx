@@ -4,34 +4,24 @@ import React, { useState, useEffect } from 'react'
 import { Cog } from 'lucide-react'
 import { Line, LineChart, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts"
 
-const TestItem = ({ name, variant, winner, improvement, conversions, visitors }: { 
+const TestItem = ({ name, description, totalTests, avgImprovement }: { 
   name: string; 
-  variant: string; 
-  winner: string;
-  improvement: string;
-  conversions: number;
-  visitors: number;
+  description: string; 
+  totalTests: number;
+  avgImprovement: string;
 }) => (
   <div className="mx-2 my-2 p-4 bg-white border border-gray-200 rounded-lg transition-all duration-200 hover:border-gray-300 hover:shadow-sm cursor-pointer">
-    <div className="flex justify-between items-start mb-3">
-      <div className="flex-1">
-        <p className="font-medium text-gray-900 mb-1">{name}</p>
-        <p className="text-sm font-light text-gray-500">{variant}</p>
-      </div>
-      <div className="text-sm font-light text-gray-600">
-        Winner: <span className="text-gray-900 font-medium">{winner}</span>
-      </div>
+    <div className="mb-2">
+      <p className="font-medium text-gray-900 mb-1">{name}</p>
+      <p className="text-sm font-light text-gray-500">{description}</p>
     </div>
-    <div className="flex gap-4 text-sm font-light text-gray-600 pt-3 border-t border-gray-100">
+    <div className="flex justify-between items-center text-sm font-light text-gray-600 pt-3 border-t border-gray-100">
+      <div>
+        <span className="text-gray-900">{totalTests}</span> tests
+      </div>
       <div className="flex items-center gap-1.5">
-        <span className="text-green-600">{improvement}</span>
-        <span>lift</span>
-      </div>
-      <div>
-        <span className="text-gray-900">{conversions}</span> conv.
-      </div>
-      <div>
-        <span className="text-gray-900">{visitors.toLocaleString()}</span> visitors
+        <span className="text-green-600">{avgImprovement}</span>
+        <span>avg lift</span>
       </div>
     </div>
   </div>
@@ -63,11 +53,9 @@ const page = () => {
   const [abTests, setAbTests] = useState<Array<{
     id: number;
     name: string;
-    variant: string;
-    winner: string;
-    improvement: string;
-    conversions: number;
-    visitors: number;
+    description: string;
+    totalTests: number;
+    avgImprovement: string;
   }>>([])
   const [baseModels, setBaseModels] = useState<Array<{
     id: number;
@@ -202,19 +190,17 @@ const page = () => {
 
         {/* Middle Sidebar - A/B Tests */}
         <div className="w-96 flex-shrink-0 bg-white border-r border-gray-200 overflow-y-auto ">
-          <div className="sticky top-0 bg-white z-10">
-            <h2 className="text-xl font-light text-gray-900 pt-5 pb-2 px-5">A/B Tests</h2>
+          <div className="sticky top-0 bg-white z-10 border-b border-gray-200">
+            <h2 className="text-xl font-light text-gray-900 pt-3 pb-2 px-5">A/B Tests</h2>
           </div>
           <div className="p-2">
             {abTests.map((test) => (
               <TestItem 
                 key={test.id} 
                 name={test.name} 
-                variant={test.variant} 
-                winner={test.winner}
-                improvement={test.improvement}
-                conversions={test.conversions}
-                visitors={test.visitors}
+                description={test.description}
+                totalTests={test.totalTests}
+                avgImprovement={test.avgImprovement}
               />
             ))}
           </div>
