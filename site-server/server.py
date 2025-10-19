@@ -3,7 +3,7 @@ from flask_cors import CORS
 import requests
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/api/*": {"origins": ["http://159.26.94.16:3000","http://localhost:3000"]}})
 
 def extract_button_text(html_string):
     """Extract text content from button HTML string."""
@@ -80,21 +80,33 @@ def get_ab_tests():
 @app.route('/api/basemodels', methods=['GET'])
 def get_base_models():
     base_models = [
-        { 'id': 1, 'modelName': 'Qwen Coder 3', 'timestamp': 'Foundation model'},
-        { 'id': 2, 'modelName': 'Qwen 0.6B', 'timestamp': 'Foundation model'},
-        { 'id': 3, 'modelName': 'GPT OSS 20B', 'timestamp': 'Foundation model'},
+        { 'id': 1, 'modelName': 'Qwen/Qwen3-Coder-30B-A3B-Instruct', 'timestamp': 'Foundation model'},
+        { 'id': 2, 'modelName': 'Qwen/Qwen2.5-Coder-7B-Instruct', 'timestamp': 'Foundation model'},
+        { 'id': 3, 'modelName': 'openai/gpt-oss-20b', 'timestamp': 'Foundation model'},
     ]
     return jsonify(base_models)
 
 @app.route('/api/finetunes', methods=['GET'])
 def get_fine_tunes():
-    fine_tunes = [
-        { 'id': 0, 'modelName': 'flywheel-v1.4', 'timestamp': '2025-10-19 14:23:15'},
-        { 'id': 1, 'modelName': 'flywheel-v1.3', 'timestamp': '2025-10-19 14:23:15'},
-        { 'id': 2, 'modelName': 'flywheel-v1.2', 'timestamp': '2025-10-19 14:23:15'},
-        { 'id': 3, 'modelName': 'flywheel-v1.1', 'timestamp': '2025-10-18 09:42:33'},
-        { 'id': 4, 'modelName': 'flywheel-v1.0', 'timestamp': '2025-10-18 8:15:08'},
-    ]
+    import os
+    
+    # Get list of checkpoint folders from outputs directory
+    output_dir = '/home/user/projects/DubHacks2025/outputs'
+    checkpoint_folders = []
+    
+    if os.path.exists(output_dir):
+        # List all items in directory and filter for folders
+        items = os.listdir(output_dir)
+        checkpoint_folders = [
+            item for item in items 
+            if os.path.isdir(os.path.join(output_dir, item))
+        ]
+    fine_tunes = []
+    for checkpoint in checkpoint_folders:
+        checkpoint_name = os.path.basename(checkpoint)
+        checkpoint_timestamp = os.path.getmtime(os.path.join(output_dir, checkpoint))
+        fine_tunes.append({ 'id': len(fine_tunes), 'modelName': checkpoint_name, 'timestamp': checkpoint_timestamp })
+
     return jsonify(fine_tunes)
 
 @app.route('/api/lossdata', methods=['GET'])
