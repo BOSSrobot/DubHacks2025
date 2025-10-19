@@ -1,5 +1,6 @@
 import requests
 import uuid
+import re
 
 def start_experiment(api_key: str, experiment_id: str):
     """Start a Statsig experiment using the correct PUT endpoint."""
@@ -17,10 +18,24 @@ def start_experiment(api_key: str, experiment_id: str):
     else:
         response.raise_for_status()
 
-def create_experiment(api_key: str, description: str, groups: list):
+def create_experiment(api_key: str, name: str, description: str, groups: list):
     """Create and automatically start a Statsig experiment."""
     
-    name = "Experiment -" + str(uuid.uuid4())
+    # Name is now required, no fallback needed
+    if not name:
+        raise ValueError("Experiment name is required")
+    
+    # Convert name to kebab case and add UUID for uniqueness
+    def to_kebab_case(text):
+        # Replace spaces and underscores with hyphens, remove special characters, convert to lowercase
+        kebab = re.sub(r'[^\w\s-]', '', text)  # Remove special chars except word chars, spaces, hyphens
+        kebab = re.sub(r'[-_\s]+', '-', kebab)  # Replace spaces, underscores, multiple hyphens with single hyphen
+        return kebab.lower().strip('-')  # Convert to lowercase and remove leading/trailing hyphens
+    
+    # Generate kebab case name with UUID suffix
+    kebab_name = to_kebab_case(name)
+    unique_id = str(uuid.uuid4())[:8]  # Use first 8 chars of UUID for brevity
+    experiment_name = f"{kebab_name}-{unique_id}"
 
     # Automatically calculate group sizes evenly
     num_groups = len(groups)
@@ -39,7 +54,7 @@ def create_experiment(api_key: str, description: str, groups: list):
             group["size"] = base_size
 
     payload = {
-        "name": name,
+        "name": experiment_name,
         "stratifiedSampling": None,
         "description": description,
         "idType": "userID",
@@ -96,6 +111,8 @@ def create_experiment(api_key: str, description: str, groups: list):
 
 command_prompt = """
 Creates and automatically starts a new Statsig experiment. The experiment will be created and then immediately started so it can run in your webapp. 
+For the name, use either the component you are modifying (e.g., 'button') or the general idea behind the test (e.g., 'selling') in kebab-case format. 
+Focus on changing only ONE parameter value per experiment (e.g., only color OR only text, not both).
 Group sizes are automatically calculated and distributed evenly (e.g., 2 groups = 50%/50%, 3 groups = 33%/33%/34%).
 Description should describe what the experiment is testing for. 
 groups should be a list of dictionaries corresponding to each group. Each dictionary should contain: 
@@ -111,6 +128,10 @@ tools = [
         "inputSchema": {
             "type": "object",
             "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "The name of the experiment in kebab-case. Use either the component you are modifying (e.g., 'button') or the general idea behind the test (e.g., 'selling'). A UUID will be automatically appended to ensure uniqueness."
+                },
                 "description": {
                     "type": "string",
                     "description": "Describes what the experiment is testing for."
@@ -139,7 +160,7 @@ tools = [
                     }
                 }
             },
-            "required": ["description", "groups"]
+            "required": ["name", "description", "groups"]
         }
     }
 ]
@@ -168,6 +189,7 @@ if __name__ == "__main__":
 
     result = create_experiment(
         api_key="console-OAyMznaZmKNxeHOARQiTnbfPjcxbaPpCC0ftafnZ9wU",
+        name="Button Color Test Experiment",
         description="testing api",
         groups=g,
     )
