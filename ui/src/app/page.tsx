@@ -37,12 +37,19 @@ const TestItem = ({ name, variant, winner, improvement, conversions, visitors }:
   </div>
 )
 
-const FineTuneItem = ({ modelName, timestamp}: { 
+const FineTuneItem = ({ modelName, timestamp, isSelected, onClick}: { 
   modelName: string; 
   timestamp: string;
   status: string;
+  isSelected?: boolean;
+  onClick?: () => void;
 }) => (
-  <div className="mx-2 my-2 p-3 bg-white border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm cursor-pointer transition-all duration-200">
+  <div 
+    onClick={onClick}
+    className={`mx-2 my-2 p-3 bg-white border rounded-lg hover:border-gray-300 hover:shadow-sm cursor-pointer transition-all duration-200 ${
+      isSelected ? 'border-gray-800 bg-gray-50' : 'border-gray-200'
+    }`}
+  >
     <div className="flex items-center justify-between">
       <p className="font-medium text-gray-900">{modelName}</p>
       <p className="text-xs font-light text-gray-500">{timestamp}</p>
@@ -76,6 +83,7 @@ const page = () => {
     epoch: number;
     loss: number;
   }>>([])
+  const [selectedModel, setSelectedModel] = useState<string>('flywheel-v1.4')
   const [isTraining, setIsTraining] = useState(false)
   const [progress, setProgress] = useState(0)
   const [showSuccess, setShowSuccess] = useState(false)
@@ -97,12 +105,15 @@ const page = () => {
       .then(response => response.json())
       .then(data => setFineTunes(data))
       .catch(error => console.error('Error fetching fine tunes:', error))
+  }, [])
 
-    fetch('http://localhost:8080/api/lossdata')
+  // Fetch loss data whenever selected model changes
+  useEffect(() => {
+    fetch(`http://localhost:8080/api/lossdata?model=${selectedModel}`)
       .then(response => response.json())
       .then(data => setLossData(data))
       .catch(error => console.error('Error fetching loss data:', error))
-  }, [])
+  }, [selectedModel])
 
   const handleFineTune = () => {
     setIsTraining(true)
@@ -172,6 +183,8 @@ const page = () => {
                   modelName={tune.modelName} 
                   timestamp={tune.timestamp}
                   status={tune.status}
+                  isSelected={selectedModel === tune.modelName}
+                  onClick={() => setSelectedModel(tune.modelName)}
                 />
               ))}
             </div>
@@ -204,7 +217,10 @@ const page = () => {
             {/* Loss Function Chart */}
             <div className="bg-white rounded-lg border border-gray-200">
               <div className="flex items-center justify-between p-5 border-b border-gray-200">
-                <h2 className="text-xl font-light text-gray-900">Loss Function</h2>
+                <div>
+                  <h2 className="text-xl font-light text-gray-900">Loss Function</h2>
+                  <p className="text-sm font-light text-gray-500 mt-1">{selectedModel}</p>
+                </div>
                 <div className="bg-green-50 text-green-700 px-4 py-2 rounded-md font-light text-base border border-green-200">
                   Loss: {lossData.length > 0 ? lossData[lossData.length - 1].loss : 0}
                 </div>
