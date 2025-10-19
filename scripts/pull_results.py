@@ -3,6 +3,7 @@ import requests
 from typing import Optional, Dict, Any
 from dotenv import load_dotenv
 from datetime import datetime
+from datasets import Dataset, DatasetDict
 
 load_dotenv('.env.local')
 
@@ -259,6 +260,37 @@ def aggregate_into_categories(event_list):
 
     return pairs_dataset
 
+def convert(pairs_dataset): 
+    new_data = []
+    for ex in pairs_dataset:
+        if float(ex["first_score"]) >= float(ex["second_score"]):
+            chosen = ex["first_option"]
+            rejected = ex["second_option"]
+        else:
+            chosen = ex["second_option"]
+            rejected = ex["first_option"]
+
+        actual_chosen = [
+            {"content": ex["prompt"], "role": "user"},
+            {"content": chosen, "role": "assistant"}
+        ]
+
+        actual_rejected = [
+            {"content": ex["prompt"], "role": "user"},
+            {"content": rejected, "role": "assistant"}
+        ]
+
+        new_data.append({
+            "chosen": actual_chosen,
+            "rejected": actual_chosen,
+            "score_chosen": max(float(ex["first_score"]), float(ex["second_score"])),
+            "score_rejected": min(float(ex["first_score"]), float(ex["second_score"]))
+        })
+
+    return new_data
+
+
+
 if __name__ == "__main__":
     use_event_list = True
     # experiment_id = input("Enter experiment ID: ").strip()
@@ -284,9 +316,24 @@ if __name__ == "__main__":
 
         pairs_dataset = aggregate_into_categories(event_list)
         print(f"Number of pairs dataset: {len(pairs_dataset)}")
-        for pair in pairs_dataset:
-            print(pair)
+
+        for my_d in pairs_dataset: 
+            if "prompt" not in my_d:
+                my_d['prompt'] = "Template prompt. DO NOT USE"
+
+        
+        hf_dataset = convert(pairs_dataset)
+
+        train_dataset = Dataset.from_list(hf_dataset)
+        validation_dataset = Dataset.from_list([hf_dataset[0]])
+        
+        dataset = DatasetDict({
+            "train": train_dataset, 
+            "validation": validation_dataset
+        })
             
+        dataset.push_to_hub("BOSSrobot343/testing-test")
+
         # except ValueError as e:
         #     print(f"⚠ No event list available: {e}")
         # except Exception as e:
