@@ -4,12 +4,16 @@ import { useExperiment, useStatsigClient } from "@statsig/react-bindings";
 
 export default function Home() {
   const { client } = useStatsigClient();
-  const experiment = useExperiment("test");
+  const experimentName = "test";
+  const experiment = useExperiment(experimentName);
   const buttonColor = experiment.get('button_color', 'green');
   const buttonText = experiment.get('button_text', 'buy noww');
 
   const handleClick = () => {
-    client.logEvent("button_clicked");
+    client.logEvent("button_clicked", experimentName, {
+      button_color: buttonColor,
+      button_text: buttonText,
+    });
   };
 
   return (
