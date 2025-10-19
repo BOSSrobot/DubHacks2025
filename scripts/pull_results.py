@@ -7,6 +7,7 @@ from datetime import datetime
 from datasets import Dataset, DatasetDict
 
 load_dotenv('.env.local')
+current_time_ms = 1760873478629
 
 def get_experiment(experiment_id: str) -> Dict[str, Any]:
 
@@ -251,9 +252,8 @@ def aggregate_into_categories(event_list):
     
     for event in event_list:
         experiment_name = event.get('value', '')
-        if experiment_name == '' or experiment_name not in whitelist_experiments:
+        if (experiment_name == '' or experiment_name not in whitelist_experiments) and int(event.get('timestamp', 0)) < current_time_ms:
             continue
-
 
         metadata = event.get('metadata', {})
         if not metadata:
