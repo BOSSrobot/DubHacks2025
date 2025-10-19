@@ -27,7 +27,7 @@ class StatsigMCPServer:
             return [
                 types.Tool(
                     name="create_experiment",
-                    description="Creates and automatically starts a new Statsig experiment. The experiment will be created and then immediately started so it can run in your webapp. For the name, use either the component you are modifying (e.g., 'button') or the general idea behind the test (e.g., 'selling') in kebab-case format. CRITICAL: Change ONLY ONE parameter across all groups (e.g., ONLY color OR ONLY text, never multiple parameters). Each group's description field MUST be actual code, not text descriptions. The group description should be the exact code/HTML that would render when that group's parameters are applied.",
+                    description="Creates and automatically starts a new Statsig experiment. The experiment will be created and then immediately started so it can run in your webapp. For the name, use either the component you are modifying (e.g., 'button') or the general idea behind the test (e.g., 'selling') in kebab-case format. CRITICAL: Change ONLY ONE parameter across all groups (e.g., ONLY color OR ONLY text, never multiple parameters). CRITICAL: The experiment name changes! Check the response json to find the new experiment name for use in your program. Each group's description field MUST be actual code, not text descriptions. The group description should be the exact code/HTML that would render when that group's parameters are applied.",
                     inputSchema={
                         "type": "object",
                         "properties": {
