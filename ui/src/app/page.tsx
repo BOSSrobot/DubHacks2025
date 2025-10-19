@@ -1,4 +1,6 @@
-import React from 'react'
+'use client'
+
+import React, { useState } from 'react'
 import { Bird } from 'lucide-react'
 
 const abTests = [
@@ -34,18 +36,45 @@ const FineTuneItem = ({ modelName, timestamp }: { modelName: string; timestamp: 
 )
 
 const page = () => {
+  const [isTraining, setIsTraining] = useState(false)
+  const [progress, setProgress] = useState(0)
+  const [showSuccess, setShowSuccess] = useState(false)
+
+  const handleFineTune = () => {
+    setIsTraining(true)
+    setProgress(0)
+    setShowSuccess(false)
+    
+    // Simulate training progress
+    const interval = setInterval(() => {
+      setProgress(prev => {
+        if (prev >= 100) {
+          clearInterval(interval)
+          setIsTraining(false)
+          setShowSuccess(true)
+          setTimeout(() => {
+            setShowSuccess(false)
+            setProgress(0)
+          }, 3000)
+          return 100
+        }
+        return prev + 2
+      })
+    }, 100)
+  }
+
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
       <header className="border-b border-gray-300">
-        <div className="max-w-xl mx-auto px-6 py-4 flex items-center gap-1">
-          <span className="text-4xl font-light">Flywheel</span>
-          <Bird strokeWidth={.7} className="w-11 h-11" />
+        <div className="mx-auto px-6 py-4 flex items-center gap-1">
+          <span className="text-5xl font-light">Flywheel</span>
+          <Bird strokeWidth={.7} className="w-14 h-14" />
         </div>
       </header>
 
       {/* Main Content */}
-      <div className="max-w-6xl mx-auto px-6 py-12">
+      <div className="mx-auto px-6 py-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* A/B Tests Section */}
           <div className="border border-gray-300 p-6">
@@ -68,10 +97,44 @@ const page = () => {
           </div>
         </div>
 
-        {/* Fine Tune Button */}
-        <button className="mt-8 w-full bg-white text-black py-4 border border-gray-500 font-light text-lg hover:bg-gray-100 transition-colors">
-          Fine Tune
-        </button>
+        {/* Fine Tune Card */}
+        <div className="mt-8 border border-gray-300 p-6">
+           {/* Status Text - Always reserves space */}
+          <div className="space-y-4">
+           <p className="text-sm font-light text-center h-5">
+              {isTraining && (
+                <span className="text-gray-600">
+                  Tuning model: {progress}%
+                </span>
+              )}
+              {showSuccess && (
+                <span className="text-green-600">
+                  ✓ Model fine-tuned successfully!
+                </span>
+              )}
+              {!isTraining && !showSuccess && (
+                <span className="text-gray-600">
+                  Ready to tune...
+                </span>
+              )}
+            </p>
+          
+            {/* Progress Bar */}
+            <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+              <div 
+                className="bg-black h-2 rounded-full transition-all duration-200 ease-out"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+            <button 
+              onClick={handleFineTune}
+              disabled={isTraining}
+              className="w-full bg-white text-black py-4 border border-gray-500 font-light text-lg hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isTraining ? 'Tuning...' : 'Fine Tune'}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   )
