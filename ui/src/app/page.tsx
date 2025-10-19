@@ -4,13 +4,22 @@ import React, { useState, useEffect } from 'react'
 import { Cog } from 'lucide-react'
 import { Line, LineChart, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts"
 
-const TestItem = ({ name, description, totalTests, avgImprovement }: { 
+const TestItem = ({ name, description, totalTests, avgImprovement, isSelected, onClick }: { 
   name: string; 
   description: string; 
   totalTests: number;
   avgImprovement: string;
+  isSelected?: boolean;
+  onClick?: () => void;
 }) => (
-  <div className="mx-2 my-2 p-4 bg-white border border-gray-200 rounded-lg transition-all duration-200 hover:border-gray-300 hover:shadow-sm cursor-pointer">
+  <div 
+    onClick={onClick}
+    className={`mx-2 my-2 p-4 bg-white border rounded-lg cursor-pointer transition-all duration-200 ${
+      isSelected 
+        ? 'border-gray-600 bg-gray-50 shadow-sm' 
+        : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
+    }`}
+  >
     <div className="mb-2">
       <p className="font-medium text-gray-900 mb-1">{name}</p>
       <p className="text-sm font-light text-gray-500">{description}</p>
@@ -49,6 +58,49 @@ const FineTuneItem = ({ modelName, timestamp, isSelected, onClick}: {
   </div>
 )
 
+const IndividualTest = ({ name, variant, winner, improvement, conversions, visitors, status }: { 
+  name: string; 
+  variant: string; 
+  winner: string;
+  improvement: string;
+  conversions: number;
+  visitors: number;
+  status: string;
+}) => (
+  <div className="p-4 bg-white border border-gray-200 rounded-lg">
+    <div className="flex justify-between items-start mb-3">
+      <div className="flex-1">
+        <p className="font-medium text-gray-900 mb-1">{name}</p>
+        <p className="text-sm font-light text-gray-500">{variant}</p>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className={`text-xs px-2 py-1 rounded ${
+          status === 'active' 
+            ? 'bg-green-50 text-green-700 border border-green-200' 
+            : 'bg-gray-50 text-gray-600 border border-gray-200'
+        }`}>
+          {status}
+        </span>
+      </div>
+    </div>
+    <div className="flex gap-4 text-sm font-light text-gray-600 pt-3 border-t border-gray-100">
+      <div className="flex items-center gap-1.5">
+        <span className="text-green-600">{improvement}</span>
+        <span>lift</span>
+      </div>
+      <div>
+        Winner: <span className="text-gray-900 font-medium">{winner}</span>
+      </div>
+      <div>
+        <span className="text-gray-900">{conversions}</span> conv.
+      </div>
+      <div>
+        <span className="text-gray-900">{visitors.toLocaleString()}</span> visitors
+      </div>
+    </div>
+  </div>
+)
+
 const page = () => {
   const [abTests, setAbTests] = useState<Array<{
     id: number;
@@ -56,6 +108,16 @@ const page = () => {
     description: string;
     totalTests: number;
     avgImprovement: string;
+    tests: Array<{
+      id: number;
+      name: string;
+      variant: string;
+      winner: string;
+      improvement: string;
+      conversions: number;
+      visitors: number;
+      status: string;
+    }>;
   }>>([])
   const [baseModels, setBaseModels] = useState<Array<{
     id: number;
@@ -74,12 +136,17 @@ const page = () => {
     loss: number;
   }>>([])
   const [selectedModel, setSelectedModel] = useState<string>('flywheel-v1.4')
+  const [selectedTestSet, setSelectedTestSet] = useState<number | null>(null)
+  const [lastClicked, setLastClicked] = useState<'model' | 'testSet'>('model')
   const [isTraining, setIsTraining] = useState(false)
   const [progress, setProgress] = useState(0)
   const [showSuccess, setShowSuccess] = useState(false)
 
   // Check if selected model is a base model
   const isBaseModel = baseModels.some(model => model.modelName === selectedModel)
+  
+  // Get the selected test set details
+  const selectedTestSetData = abTests.find(testSet => testSet.id === selectedTestSet)
 
   useEffect(() => {
     fetch('http://localhost:8080/api/abtests')
@@ -162,7 +229,10 @@ const page = () => {
                   timestamp={model.timestamp}
                   status={model.status}
                   isSelected={selectedModel === model.modelName}
-                  onClick={() => setSelectedModel(model.modelName)}
+                  onClick={() => {
+                    setSelectedModel(model.modelName)
+                    setLastClicked('model')
+                  }}
                 />
               ))}
             </div>
@@ -181,7 +251,10 @@ const page = () => {
                   timestamp={tune.timestamp}
                   status={tune.status}
                   isSelected={selectedModel === tune.modelName}
-                  onClick={() => setSelectedModel(tune.modelName)}
+                  onClick={() => {
+                    setSelectedModel(tune.modelName)
+                    setLastClicked('model')
+                  }}
                 />
               ))}
             </div>
@@ -191,7 +264,7 @@ const page = () => {
         {/* Middle Sidebar - A/B Tests */}
         <div className="w-96 flex-shrink-0 bg-white border-r border-gray-200 overflow-y-auto ">
           <div className="sticky top-0 bg-white z-10 border-b border-gray-200">
-            <h2 className="text-xl font-light text-gray-900 pt-3 pb-2 px-5">A/B Tests</h2>
+            <h2 className="text-xl font-light text-gray-900 pt-3 pb-2 px-5">A/B Test Sets</h2>
           </div>
           <div className="p-2">
             {abTests.map((test) => (
@@ -201,6 +274,11 @@ const page = () => {
                 description={test.description}
                 totalTests={test.totalTests}
                 avgImprovement={test.avgImprovement}
+                isSelected={selectedTestSet === test.id}
+                onClick={() => {
+                  setSelectedTestSet(test.id)
+                  setLastClicked('testSet')
+                }}
               />
             ))}
           </div>
@@ -209,50 +287,73 @@ const page = () => {
         {/* Right Panel - Graph and Fine Tune */}
         <div className="flex-1 flex flex-col overflow-y-auto">
           <div className="p-6 space-y-6">
-            {/* Loss Function Chart */}
-            <div className="bg-white rounded-lg border border-gray-200">
-              <div className="flex items-center justify-between p-5 border-b border-gray-200">
-                <div>
-                  <h2 className="text-xl font-light text-gray-900">Loss Function</h2>
-                  <p className="text-sm font-light text-gray-500 mt-1">{selectedModel}</p>
+            {/* Test Details or Loss Function Chart */}
+            {lastClicked === 'testSet' && selectedTestSetData ? (
+              <div className="bg-white rounded-lg border border-gray-200">
+                <div className="p-5 border-b border-gray-200">
+                  <h2 className="text-xl font-light text-gray-900">{selectedTestSetData.name}</h2>
+                  <p className="text-sm font-light text-gray-500 mt-1">{selectedTestSetData.description}</p>
                 </div>
-                <div className={`px-4 py-2 rounded-md font-light text-base border ${
-                  isBaseModel 
-                    ? 'bg-gray-50 text-gray-500 border-gray-200' 
-                    : 'bg-green-50 text-green-700 border-green-200'
-                }`}>
-                  Loss: {isBaseModel ? '--' : (lossData.length > 0 ? lossData[lossData.length - 1].loss : 0)}
+                <div className="h-76 overflow-y-auto p-6 space-y-4">
+                  {selectedTestSetData.tests.map((test) => (
+                    <IndividualTest
+                      key={test.id}
+                      name={test.name}
+                      variant={test.variant}
+                      winner={test.winner}
+                      improvement={test.improvement}
+                      conversions={test.conversions}
+                      visitors={test.visitors}
+                      status={test.status}
+                    />
+                  ))}
                 </div>
               </div>
-              <div className="w-full h-76 p-6 pr-12">
-                {isBaseModel ? (
-                  <div className="h-full flex items-center justify-center">
-                    <p className="text-gray-500 font-light text-lg">Foundational Models Do Not Have Loss Function</p>
+            ) : (
+              <div className="bg-white rounded-lg border border-gray-200">
+                <div className="flex items-center justify-between p-5 border-b border-gray-200">
+                  <div>
+                    <h2 className="text-xl font-light text-gray-900">Loss Function</h2>
+                    <p className="text-sm font-light text-gray-500 mt-1">{selectedModel}</p>
                   </div>
-                ) : (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={lossData}>
-                      <XAxis dataKey="epoch" tick={false} />
-                      <YAxis domain={['dataMin - 0.2', 'dataMax + 0.2']} tick={false}  axisLine={false} />
-                      <Line type="monotone" dataKey="loss" stroke="#141414" strokeWidth={1} />
-                      <Tooltip content={({ payload }) => {
-                        if (payload && payload.length > 0) {
-                          return (
-                            <div className="bg-white border border-gray-300 p-2 rounded">
-                              <p className="text-gray-900 text-sm">
-                                <span className="font-medium">Epoch:</span> {payload[0].payload.epoch}<br />
-                                <span className="font-medium">Loss:</span> {payload[0].value}
-                              </p>
-                            </div>
-                          );
-                        }
-                        return null;
-                      }} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                )}
+                  <div className={`px-4 py-2 rounded-md font-light text-base border ${
+                    isBaseModel 
+                      ? 'bg-gray-50 text-gray-500 border-gray-200' 
+                      : 'bg-green-50 text-green-700 border-green-200'
+                  }`}>
+                    Loss: {isBaseModel ? '--' : (lossData.length > 0 ? lossData[lossData.length - 1].loss : 0)}
+                  </div>
+                </div>
+                <div className="w-full h-76 p-6 pr-12">
+                  {isBaseModel ? (
+                    <div className="h-full flex items-center justify-center">
+                      <p className="text-gray-500 font-light text-lg">Foundational Models Do Not Have Loss Function</p>
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={lossData}>
+                        <XAxis dataKey="epoch" tick={false} />
+                        <YAxis domain={['dataMin - 0.2', 'dataMax + 0.2']} tick={false}  axisLine={false} />
+                        <Line type="monotone" dataKey="loss" stroke="#141414" strokeWidth={1} />
+                        <Tooltip content={({ payload }) => {
+                          if (payload && payload.length > 0) {
+                            return (
+                              <div className="bg-white border border-gray-300 p-2 rounded">
+                                <p className="text-gray-900 text-sm">
+                                  <span className="font-medium">Epoch:</span> {payload[0].payload.epoch}<br />
+                                  <span className="font-medium">Loss:</span> {payload[0].value}
+                                </p>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Fine Tune Control */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
