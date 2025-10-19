@@ -62,7 +62,7 @@ def transform_ab_test_data(raw_data):
     ]
     
     return test_groups
-
+'''
 @app.route('/api/abtests', methods=['GET'])
 def get_ab_tests():
     try:
@@ -76,6 +76,71 @@ def get_ab_tests():
     except requests.exceptions.RequestException as e:
         print(f"Error fetching from external API: {e}")
         return jsonify({'error': str(e)}), 500
+'''
+@app.route('/api/abtests', methods=['GET'])
+def get_ab_tests():
+    return jsonify([
+        {
+            'id': 1,
+            'name': 'E-Commerce Action Button Tests',
+            'description': 'Button copy and color variations for e-commerce purchase',
+            'totalTests': 10,
+            'avgImprovement': '+10.0%',
+            'tests': [
+                {
+                    'id': 1,
+                    'name': 'Button Test 1',
+                    'variant': 'Button A',
+                    'winner': 'A',
+                    'improvement': '+10.0%'
+                },
+                {
+                    'id': 2,
+                    'name': 'Button Test 2',
+                    'variant': 'Button B',
+                    'winner': 'B',
+                    'improvement': '+10.0%'
+                },
+                {
+                    'id': 3,
+                    'name': 'Button Test 3',
+                    'variant': 'Button C',
+                    'winner': 'Tie',
+                    'improvement': '0%'
+                }
+            ]
+        },
+        {
+            'id': 2,
+            'name': 'E-Commerce Action Button Tests 2',
+            'description': 'Button copy and color variations for e-commerce purchase',
+            'totalTests': 10,
+            'avgImprovement': '+10.0%',
+            'tests': [
+                {
+                    'id': 1,
+                    'name': 'Button Test 1',
+                    'variant': 'Button A',
+                    'winner': 'A',
+                    'improvement': '+10.0%'
+                },
+                {
+                    'id': 2,
+                    'name': 'Button Test 2',
+                    'variant': 'Button B',
+                    'winner': 'B',
+                    'improvement': '+10.0%'
+                },
+                {
+                    'id': 3,
+                    'name': 'Button Test 3',
+                    'variant': 'Button C',
+                    'winner': 'Tie',
+                    'improvement': '0%'
+                }
+            ]
+        }
+    ])
 
 @app.route('/api/basemodels', methods=['GET'])
 def get_base_models():
