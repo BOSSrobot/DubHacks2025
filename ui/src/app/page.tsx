@@ -1,34 +1,8 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Bird, Cog } from 'lucide-react'
 import { Line, LineChart, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts"
-
-const abTests = [
-  { id: 1, name: 'Hero CTA Button', variant: 'A vs B', winner: 'B', improvement: '+12.3%', conversions: 287, visitors: 2431 },
-  { id: 2, name: 'Navigation Layout', variant: 'A vs B', winner: 'A', improvement: '+8.7%', conversions: 412, visitors: 4102 },
-  { id: 3, name: 'Color Scheme', variant: 'A vs B', winner: 'B', improvement: '+15.2%', conversions: 198, visitors: 1823 },
-  { id: 4, name: 'Pricing Display', variant: 'A vs B', winner: 'B', improvement: '+9.4%', conversions: 121, visitors: 1089 },
-]
-
-const fineTunes = [
-  { id: 0, modelName: 'flywheel-v1.4', timestamp: '2025-10-19 14:23:15', status: 'active' },
-  { id: 1, modelName: 'flywheel-v1.3', timestamp: '2025-10-19 14:23:15', status: 'archived' },
-  { id: 2, modelName: 'flywheel-v1.2', timestamp: '2025-10-19 14:23:15', status: 'archived' },
-  { id: 3, modelName: 'flywheel-v1.1', timestamp: '2025-10-18 09:42:33', status: 'archived' },
-  { id: 4, modelName: 'flywheel-v1.0', timestamp: '2025-10-18 8:15:08', status: 'archived' },
-]
-
-const lossData = [
-  { epoch: 1, loss: 2.22 },
-  { epoch: 2, loss: 2.12 },
-  { epoch: 3, loss: 1.89 },
-  { epoch: 4, loss: 1.75 },
-  { epoch: 5, loss: 1.58 },
-  { epoch: 6, loss: 1.42 },
-  { epoch: 7, loss: 1.31 },
-  { epoch: 8, loss: 1.18 },
-]
 
 const TestItem = ({ name, variant, winner, improvement, conversions, visitors }: { 
   name: string; 
@@ -80,9 +54,45 @@ const FineTuneItem = ({ modelName, timestamp, status }: {
 )
 
 const page = () => {
+  const [abTests, setAbTests] = useState<Array<{
+    id: number;
+    name: string;
+    variant: string;
+    winner: string;
+    improvement: string;
+    conversions: number;
+    visitors: number;
+  }>>([])
+  const [fineTunes, setFineTunes] = useState<Array<{
+    id: number;
+    modelName: string;
+    timestamp: string;
+    status: string;
+  }>>([])
+  const [lossData, setLossData] = useState<Array<{
+    epoch: number;
+    loss: number;
+  }>>([])
   const [isTraining, setIsTraining] = useState(false)
   const [progress, setProgress] = useState(0)
   const [showSuccess, setShowSuccess] = useState(false)
+
+  useEffect(() => {
+    fetch('http://localhost:8080/api/abtests')
+      .then(response => response.json())
+      .then(data => setAbTests(data))
+      .catch(error => console.error('Error fetching A/B tests:', error))
+
+    fetch('http://localhost:8080/api/finetunes')
+      .then(response => response.json())
+      .then(data => setFineTunes(data))
+      .catch(error => console.error('Error fetching fine tunes:', error))
+
+    fetch('http://localhost:8080/api/lossdata')
+      .then(response => response.json())
+      .then(data => setLossData(data))
+      .catch(error => console.error('Error fetching loss data:', error))
+  }, [])
 
   const handleFineTune = () => {
     setIsTraining(true)
@@ -150,7 +160,7 @@ const page = () => {
               <div className="flex items-center justify-between p-5 border-b border-gray-200">
                 <h2 className="text-xl font-light text-gray-900">Loss Function</h2>
                 <div className="bg-green-50 text-green-700 px-4 py-2 rounded-md font-light text-base border border-green-200">
-                  Loss: {lossData[lossData.length - 1].loss}
+                  Loss: {lossData.length > 0 ? lossData[lossData.length - 1].loss : 0}
                 </div>
               </div>
               <div className="w-full h-76 p-6 pr-12">
