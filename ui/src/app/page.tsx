@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Cog } from 'lucide-react'
+import { Cog, RefreshCw } from 'lucide-react'
 import { Line, LineChart, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts"
 
 const TestItem = ({ name, description, totalTests, avgImprovement, isSelected, onClick }: { 
@@ -157,6 +157,11 @@ const page = () => {
     }
   }, [selectedModel, isBaseModel])
 
+  const handleReloadTests = () => {
+    //fetch('http://localhost:8080/api/abtests')
+    console.log("placeholder")
+  }
+
   const handleFineTune = () => {
     setIsTraining(true)
     setProgress(0)
@@ -242,7 +247,16 @@ const page = () => {
         {/* Middle Sidebar - A/B Tests */}
         <div className="w-96 flex-shrink-0 bg-white border-r border-gray-200 overflow-y-auto ">
           <div className="sticky top-0 bg-white z-10 border-b border-gray-200">
-            <h2 className="text-xl font-light text-gray-900 pt-3 pb-2 px-5">A/B Test Sets</h2>
+            <div className="flex items-center justify-between pt-3 pb-2 pl-5 pr-3">
+              <h2 className="text-xl font-light text-gray-900">A/B Test Sets</h2>
+              <button
+                onClick={handleReloadTests}
+                className="p-1 hover:bg-gray-100 rounded-md transition-colors group"
+                aria-label="Reload A/B tests"
+              >
+                <RefreshCw className="w-5 h-5 text-gray-600 transition-transform group-hover:rotate-180 duration-300" strokeWidth={1} />
+              </button>
+            </div>
           </div>
           <div className="p-2">
             {abTests.map((test) => (
