@@ -19,9 +19,8 @@ const fineTunes = [
   { id: 4, modelName: 'flywheel-v1.0', timestamp: '2025-10-18 8:15:08', status: 'archived' },
 ]
 
-// Sample loss data for the loss function graph
 const lossData = [
-  { epoch: 1, loss: 2.45 },
+  { epoch: 1, loss: 2.22 },
   { epoch: 2, loss: 2.12 },
   { epoch: 3, loss: 1.89 },
   { epoch: 4, loss: 1.75 },
@@ -39,7 +38,7 @@ const TestItem = ({ name, variant, winner, improvement, conversions, visitors }:
   conversions: number;
   visitors: number;
 }) => (
-  <div className="mx-2 my-2 p-4 bg-white border border-gray-200 rounded-lg hover:border-gray-300 transition-all duration-200 cursor-pointer">
+  <div className="mx-2 my-2 p-4 bg-white border border-gray-200 rounded-lg transition-all duration-200">
     <div className="flex justify-between items-start mb-3">
       <div className="flex-1">
         <p className="font-medium text-gray-900 mb-1">{name}</p>
@@ -69,7 +68,7 @@ const FineTuneItem = ({ modelName, timestamp, status }: {
   timestamp: string;
   status: string;
 }) => (
-  <div className="mx-2 my-2 p-4 bg-white border border-gray-200 rounded-lg hover:border-gray-300 transition-all duration-200 cursor-pointer">
+  <div className="mx-2 my-2 p-4 bg-white border border-gray-200 rounded-lg">
     <div className="flex items-start justify-between mb-2">
       <p className="font-medium text-gray-900">{modelName}</p>
       {status === 'active' && (
@@ -90,7 +89,6 @@ const page = () => {
     setProgress(0)
     setShowSuccess(false)
     
-    // Simulate training progress
     const interval = setInterval(() => {
       setProgress(prev => {
         if (prev >= 100) {
@@ -117,7 +115,7 @@ const page = () => {
             <span className="text-3xl font-light">Flywheel</span>
             <Bird strokeWidth={.7} className="w-9 h-9" />
           </div>
-          <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 transition-colors cursor-pointer">
+          <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
           </div>
         </div>
       </header>
