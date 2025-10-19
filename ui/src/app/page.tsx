@@ -39,7 +39,6 @@ const TestItem = ({ name, description, totalTests, avgImprovement, isSelected, o
 const FineTuneItem = ({ modelName, timestamp, isSelected, onClick}: { 
   modelName: string; 
   timestamp: string;
-  status: string;
   isSelected?: boolean;
   onClick?: () => void;
 }) => (
@@ -102,14 +101,12 @@ const page = () => {
   const [baseModels, setBaseModels] = useState<Array<{
     id: number;
     modelName: string;
-    timestamp: string;
-    status: string;
+    timestamp: string;  
   }>>([])
   const [fineTunes, setFineTunes] = useState<Array<{
     id: number;
     modelName: string;
     timestamp: string;
-    status: string;
   }>>([])
   const [lossData, setLossData] = useState<Array<{
     epoch: number;
@@ -122,10 +119,8 @@ const page = () => {
   const [progress, setProgress] = useState(0)
   const [showSuccess, setShowSuccess] = useState(false)
 
-  // Check if selected model is a base model
   const isBaseModel = baseModels.some(model => model.modelName === selectedModel)
   
-  // Get the selected test set details
   const selectedTestSetData = abTests.find(testSet => testSet.id === selectedTestSet)
 
   useEffect(() => {
@@ -212,7 +207,6 @@ const page = () => {
                   key={model.id} 
                   modelName={model.modelName} 
                   timestamp={model.timestamp}
-                  status={model.status}
                   isSelected={selectedModel === model.modelName}
                   onClick={() => {
                     setSelectedModel(model.modelName)
@@ -234,7 +228,6 @@ const page = () => {
                   key={tune.id} 
                   modelName={tune.modelName} 
                   timestamp={tune.timestamp}
-                  status={tune.status}
                   isSelected={selectedModel === tune.modelName}
                   onClick={() => {
                     setSelectedModel(tune.modelName)

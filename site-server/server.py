@@ -38,7 +38,6 @@ def transform_ab_test_data(raw_data):
         
         improvement = f"+{improvement_val:.1f}%"
         
-        # Create test object
         test = {
             'id': 101 + idx,
             'name': f'Button Test {idx + 1}',
@@ -81,20 +80,20 @@ def get_ab_tests():
 @app.route('/api/basemodels', methods=['GET'])
 def get_base_models():
     base_models = [
-        { 'id': 1, 'modelName': 'Qwen Coder 3', 'timestamp': 'Foundation model', 'status': 'active' },
-        { 'id': 2, 'modelName': 'Qwen 0.6B', 'timestamp': 'Foundation model', 'status': '' },
-        { 'id': 3, 'modelName': 'GPT OSS 20B', 'timestamp': 'Foundation model', 'status': '' },
+        { 'id': 1, 'modelName': 'Qwen Coder 3', 'timestamp': 'Foundation model'},
+        { 'id': 2, 'modelName': 'Qwen 0.6B', 'timestamp': 'Foundation model'},
+        { 'id': 3, 'modelName': 'GPT OSS 20B', 'timestamp': 'Foundation model'},
     ]
     return jsonify(base_models)
 
 @app.route('/api/finetunes', methods=['GET'])
 def get_fine_tunes():
     fine_tunes = [
-        { 'id': 0, 'modelName': 'flywheel-v1.4', 'timestamp': '2025-10-19 14:23:15', 'status': 'active'},
-        { 'id': 1, 'modelName': 'flywheel-v1.3', 'timestamp': '2025-10-19 14:23:15', 'status': ''},
-        { 'id': 2, 'modelName': 'flywheel-v1.2', 'timestamp': '2025-10-19 14:23:15', 'status': ''},
-        { 'id': 3, 'modelName': 'flywheel-v1.1', 'timestamp': '2025-10-18 09:42:33', 'status': ''},
-        { 'id': 4, 'modelName': 'flywheel-v1.0', 'timestamp': '2025-10-18 8:15:08', 'status': ''},
+        { 'id': 0, 'modelName': 'flywheel-v1.4', 'timestamp': '2025-10-19 14:23:15'},
+        { 'id': 1, 'modelName': 'flywheel-v1.3', 'timestamp': '2025-10-19 14:23:15'},
+        { 'id': 2, 'modelName': 'flywheel-v1.2', 'timestamp': '2025-10-19 14:23:15'},
+        { 'id': 3, 'modelName': 'flywheel-v1.1', 'timestamp': '2025-10-18 09:42:33'},
+        { 'id': 4, 'modelName': 'flywheel-v1.0', 'timestamp': '2025-10-18 8:15:08'},
     ]
     return jsonify(fine_tunes)
 
@@ -102,10 +101,8 @@ def get_fine_tunes():
 def get_loss_data():
     model_name = request.args.get('model', default='flywheel-v1.4', type=str)
     
-    # Different loss curves for each tuned model - each with unique training patterns
     loss_data_by_model = {
         'flywheel-v1.4': [
-            # Steep initial drop, then gradual improvement
             { 'epoch': 1, 'loss': 2.45 },
             { 'epoch': 2, 'loss': 1.68 },
             { 'epoch': 3, 'loss': 1.42 },
@@ -116,7 +113,6 @@ def get_loss_data():
             { 'epoch': 8, 'loss': 0.92 },
         ],
         'flywheel-v1.3': [
-            # More consistent decline with a small plateau
             { 'epoch': 1, 'loss': 2.78 },
             { 'epoch': 2, 'loss': 2.35 },
             { 'epoch': 3, 'loss': 1.89 },
@@ -127,7 +123,6 @@ def get_loss_data():
             { 'epoch': 8, 'loss': 1.24 },
         ],
         'flywheel-v1.2': [
-            # Gradual decline with slight bump in middle
             { 'epoch': 1, 'loss': 3.12 },
             { 'epoch': 2, 'loss': 2.68 },
             { 'epoch': 3, 'loss': 2.41 },
@@ -138,7 +133,6 @@ def get_loss_data():
             { 'epoch': 8, 'loss': 1.67 },
         ],
         'flywheel-v1.1': [
-            # Slow initial drop, then steeper improvement
             { 'epoch': 1, 'loss': 3.41 },
             { 'epoch': 2, 'loss': 3.28 },
             { 'epoch': 3, 'loss': 3.05 },
@@ -149,7 +143,6 @@ def get_loss_data():
             { 'epoch': 8, 'loss': 1.79 },
         ],
         'flywheel-v1.0': [
-            # Very gradual, steady decline - slower convergence
             { 'epoch': 1, 'loss': 3.65 },
             { 'epoch': 2, 'loss': 3.52 },
             { 'epoch': 3, 'loss': 3.38 },
@@ -161,7 +154,6 @@ def get_loss_data():
         ],
     }
     
-    # Return the loss data for the requested model, or the default if not found
     return jsonify(loss_data_by_model.get(model_name, loss_data_by_model['flywheel-v1.4']))
 
 if __name__ == '__main__':
