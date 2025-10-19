@@ -27,10 +27,14 @@ class StatsigMCPServer:
             return [
                 types.Tool(
                     name="create_experiment",
-                    description="Creates and automatically starts a new Statsig experiment. The experiment will be created and then immediately started so it can run in your webapp. Description should describe what the experiment is testing for. Groups should be a list of dictionaries corresponding to each group with name, description, and parameterValues. Note that the group description will consist of code!",
+                    description="Creates and automatically starts a new Statsig experiment. The experiment will be created and then immediately started so it can run in your webapp. For the name, use either the component you are modifying (e.g., 'button') or the general idea behind the test (e.g., 'selling') in kebab-case format. CRITICAL: Change ONLY ONE parameter across all groups (e.g., ONLY color OR ONLY text, never multiple parameters). CRITICAL: The experiment name changes! Check the response json to find the new experiment name for use in your program. Each group's description field MUST be actual code, not text descriptions. The group description should be the exact code/HTML that would render when that group's parameters are applied.",
                     inputSchema={
                         "type": "object",
                         "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "The name of the experiment in kebab-case. Use either the component you are modifying (e.g., 'button') or the general idea behind the test (e.g., 'selling'). A UUID will be automatically appended to ensure uniqueness."
+                            },
                             "description": {
                                 "type": "string",
                                 "description": "Describes what the experiment is testing for."
@@ -47,7 +51,7 @@ class StatsigMCPServer:
                                         },
                                         "description": {
                                             "type": "string",
-                                            "description": "A string of EXACTLY code describing what the component would look like when this group's parameters are applied."
+                                            "description": "MUST BE ACTUAL CODE/HTML - NOT text description. Provide the exact code snippet that would render when this group's parameters are applied (e.g., '<button style=\"color: blue\">Click me</button>')."
                                         },
                                         "parameterValues": {
                                             "type": "object",
@@ -59,7 +63,7 @@ class StatsigMCPServer:
                                 }
                             }
                         },
-                        "required": ["description", "groups"]
+                        "required": ["name", "description", "groups"]
                     },
                 )
             ]
@@ -95,12 +99,21 @@ class StatsigMCPServer:
                 return [
                     types.TextContent(
                         type="text",
-                        text="Error: Missing required arguments. Please provide 'description' and 'groups'."
+                        text="Error: Missing required arguments. Please provide 'name', 'description' and 'groups'."
                     )
                 ]
             
+            name = arguments.get("name")
             description = arguments.get("description")
             groups = arguments.get("groups")
+            
+            if not name:
+                return [
+                    types.TextContent(
+                        type="text",
+                        text="Error: Missing required argument 'name'."
+                    )
+                ]
             
             if not description:
                 return [
@@ -130,7 +143,7 @@ class StatsigMCPServer:
             # Note: Group sizes will be automatically calculated and distributed evenly
             
             # Call the create_experiment function from main.py
-            result = create_experiment(api_key, description, groups)
+            result = create_experiment(api_key, name, description, groups)
             
             return [
                 types.TextContent(
