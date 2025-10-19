@@ -6,7 +6,6 @@ from datetime import datetime
 
 load_dotenv('.env.local')
 
-
 def get_experiment(experiment_id: str) -> Dict[str, Any]:
 
     api_key = os.getenv('STATSIG_CONSOLE_KEY')
@@ -95,7 +94,6 @@ if __name__ == "__main__":
             print(f"⚠ No pulse results available: {e}")
         except Exception as e:
             print(f"✗ Failed to fetch pulse results: {e}")
-    
     except Exception as e:
         print(f"✗ Error: {e}")
 
