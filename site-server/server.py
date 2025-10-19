@@ -1,72 +1,82 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-import psycopg2
+import requests
 
 app = Flask(__name__)
 CORS(app)
 
-@app.route('/api/double', methods=['GET'])
-def double_number():
-    number_str = request.args.get('number', default='0', type=str)
+def extract_button_text(html_string):
+    """Extract text content from button HTML string."""
+    try:
+        start = html_string.find('>') + 1
+        end = html_string.find('</button>')
+        if start > 0 and end > 0:
+            return html_string[start:end].strip()
+        return 'Button'
+    except:
+        return 'Button'
 
-    number = int(number_str)
-    doubled_number = number * 2
-
-    return jsonify({'result': doubled_number})
+def transform_ab_test_data(raw_data):
+    """Transform raw A/B test data into frontend format."""
+    tests = []
+    
+    for idx, comparison in enumerate(raw_data):
+        first_score = comparison.get('first_score', 0)
+        second_score = comparison.get('second_score', 0)
+        
+        first_text = extract_button_text(comparison.get('first_option', ''))
+        second_text = extract_button_text(comparison.get('second_option', ''))
+        if first_score > second_score:
+            winner = 'A'
+            improvement_val = (first_score - second_score) * 100
+        elif second_score > first_score:
+            winner = 'B'
+            improvement_val = (second_score - first_score) * 100
+        else:
+            winner = 'Tie'
+            improvement_val = 0
+        
+        improvement = f"+{improvement_val:.1f}%"
+        
+        # Create test object
+        test = {
+            'id': 101 + idx,
+            'name': f'Button Test {idx + 1}',
+            'variant': f'{first_text[:30]}... vs {second_text[:30]}...',
+            'winner': winner,
+            'improvement': improvement
+        }
+        tests.append(test)
+    
+    improvements = [float(t['improvement'].strip('+%')) for t in tests if t['improvement'] != '0%']
+    avg_improvement = f"+{sum(improvements) / len(improvements):.1f}%" if improvements else '0%'
+    
+    test_groups = [
+        {
+            'id': 1,
+            'name': 'E-Commerce Action Button Tests',
+            'description': 'Button copy and color variations for e-commerce purchase',
+            'totalTests': len(tests),
+            'avgImprovement': avg_improvement,
+            'tests': tests
+        }
+    ]
+    
+    return test_groups
 
 @app.route('/api/abtests', methods=['GET'])
 def get_ab_tests():
-    test_groups = [
-        { 
-            'id': 1, 
-            'name': 'Ecommerce Tests', 
-            'description': 'Tests related to purchase flow and conversion',
-            'totalTests': 4,
-            'avgImprovement': '+11.2%',
-            'tests': [
-                { 'id': 101, 'name': 'Buy Button Text', 'variant': 'A vs B', 'winner': 'B', 'improvement': '+12.3%', 'conversions': 287, 'visitors': 2431, 'status': 'active' },
-                { 'id': 102, 'name': 'Form Size', 'variant': 'Short vs Long', 'winner': 'A', 'improvement': '+8.7%', 'conversions': 412, 'visitors': 4102, 'status': 'active' },
-                { 'id': 103, 'name': 'Product Image Layout', 'variant': 'Grid vs Carousel', 'winner': 'B', 'improvement': '+15.2%', 'conversions': 198, 'visitors': 1823, 'status': 'completed' },
-                { 'id': 104, 'name': 'Checkout Button Color', 'variant': 'Green vs Blue', 'winner': 'A', 'improvement': '+9.1%', 'conversions': 334, 'visitors': 2987, 'status': 'completed' },
-            ]
-        },
-        { 
-            'id': 2, 
-            'name': 'Navigation & UX Tests', 
-            'description': 'Tests for site navigation and user experience',
-            'totalTests': 3,
-            'avgImprovement': '+6.8%',
-            'tests': [
-                { 'id': 201, 'name': 'Menu Layout', 'variant': 'Hamburger vs Full', 'winner': 'B', 'improvement': '+7.2%', 'conversions': 523, 'visitors': 5103, 'status': 'active' },
-                { 'id': 202, 'name': 'Search Bar Position', 'variant': 'Top vs Side', 'winner': 'A', 'improvement': '+5.4%', 'conversions': 289, 'visitors': 3421, 'status': 'completed' },
-                { 'id': 203, 'name': 'Breadcrumb Style', 'variant': 'Text vs Icons', 'winner': 'B', 'improvement': '+7.8%', 'conversions': 167, 'visitors': 1567, 'status': 'completed' },
-            ]
-        },
-        { 
-            'id': 3, 
-            'name': 'Content & Messaging Tests', 
-            'description': 'Tests for headlines, copy, and messaging',
-            'totalTests': 3,
-            'avgImprovement': '+10.3%',
-            'tests': [
-                { 'id': 301, 'name': 'Hero Headline', 'variant': 'Benefit vs Feature', 'winner': 'A', 'improvement': '+14.2%', 'conversions': 445, 'visitors': 3892, 'status': 'active' },
-                { 'id': 302, 'name': 'CTA Copy', 'variant': 'Short vs Long', 'winner': 'B', 'improvement': '+8.9%', 'conversions': 312, 'visitors': 2765, 'status': 'completed' },
-                { 'id': 303, 'name': 'Value Proposition', 'variant': 'A vs B', 'winner': 'A', 'improvement': '+7.8%', 'conversions': 234, 'visitors': 2109, 'status': 'completed' },
-            ]
-        },
-        { 
-            'id': 4, 
-            'name': 'Pricing & Plans Tests', 
-            'description': 'Tests for pricing display and plan presentation',
-            'totalTests': 2,
-            'avgImprovement': '+13.1%',
-            'tests': [
-                { 'id': 401, 'name': 'Pricing Display', 'variant': 'Monthly vs Annual First', 'winner': 'B', 'improvement': '+15.2%', 'conversions': 198, 'visitors': 1823, 'status': 'active' },
-                { 'id': 402, 'name': 'Plan Comparison Table', 'variant': 'Simple vs Detailed', 'winner': 'A', 'improvement': '+11.0%', 'conversions': 156, 'visitors': 1432, 'status': 'completed' },
-            ]
-        },
-    ]
-    return jsonify(test_groups)
+    try:
+        response = requests.get('http://159.26.94.16:8001/dataset', timeout=5)
+        response.raise_for_status()  
+        
+        raw_data = response.json()
+        transformed_data = transform_ab_test_data(raw_data)
+        return jsonify(transformed_data)
+        
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching from external API: {e}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/basemodels', methods=['GET'])
 def get_base_models():

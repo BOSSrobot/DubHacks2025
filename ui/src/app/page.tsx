@@ -58,14 +58,11 @@ const FineTuneItem = ({ modelName, timestamp, isSelected, onClick}: {
   </div>
 )
 
-const IndividualTest = ({ name, variant, winner, improvement, conversions, visitors, status }: { 
+const IndividualTest = ({ name, variant, winner, improvement }: { 
   name: string; 
   variant: string; 
   winner: string;
   improvement: string;
-  conversions: number;
-  visitors: number;
-  status: string;
 }) => (
   <div className="p-4 bg-white border border-gray-200 rounded-lg">
     <div className="flex justify-between items-start mb-3">
@@ -73,30 +70,16 @@ const IndividualTest = ({ name, variant, winner, improvement, conversions, visit
         <p className="font-medium text-gray-900 mb-1">{name}</p>
         <p className="text-sm font-light text-gray-500">{variant}</p>
       </div>
-      <div className="flex items-center gap-2">
-        <span className={`text-xs px-2 py-1 rounded ${
-          status === 'active' 
-            ? 'bg-green-50 text-green-700 border border-green-200' 
-            : 'bg-gray-50 text-gray-600 border border-gray-200'
-        }`}>
-          {status}
-        </span>
-      </div>
     </div>
     <div className="flex gap-4 text-sm font-light text-gray-600 pt-3 border-t border-gray-100">
+    <div>
+        Winner: <span className="text-gray-900 font-medium">{winner}</span>
+      </div>
       <div className="flex items-center gap-1.5">
         <span className="text-green-600">{improvement}</span>
         <span>lift</span>
       </div>
-      <div>
-        Winner: <span className="text-gray-900 font-medium">{winner}</span>
-      </div>
-      <div>
-        <span className="text-gray-900">{conversions}</span> conv.
-      </div>
-      <div>
-        <span className="text-gray-900">{visitors.toLocaleString()}</span> visitors
-      </div>
+      
     </div>
   </div>
 )
@@ -114,9 +97,6 @@ const page = () => {
       variant: string;
       winner: string;
       improvement: string;
-      conversions: number;
-      visitors: number;
-      status: string;
     }>;
   }>>([])
   const [baseModels, setBaseModels] = useState<Array<{
@@ -307,9 +287,6 @@ const page = () => {
                       variant={test.variant}
                       winner={test.winner}
                       improvement={test.improvement}
-                      conversions={test.conversions}
-                      visitors={test.visitors}
-                      status={test.status}
                     />
                   ))}
                 </div>
@@ -361,7 +338,7 @@ const page = () => {
             )}
 
             {/* Fine Tune Control */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
               <div className="space-y-4">
                 <div className="text-center">
                   <p className="text-base font-light h-7 flex items-center justify-center">
