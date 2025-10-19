@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Bird, User } from 'lucide-react'
+import { Bird, User, Cog } from 'lucide-react'
 import { Line, LineChart, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts"
 
 const abTests = [
@@ -185,8 +185,9 @@ const page = () => {
               <div className="space-y-3">
                 <p className="text-sm font-light text-center h-5">
                   {isTraining && (
-                    <span className="text-gray-600">
-                      Tuning model: {progress}%
+                    <span className="flex items-center justify-center text-gray-600 gap-1">
+                      Tuning model...
+                      <Cog className="w-5 h-5 animate-spin stroke-1" />
                     </span>
                   )}
                   {showSuccess && (
