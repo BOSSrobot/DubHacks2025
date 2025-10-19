@@ -347,8 +347,8 @@ def convert(pairs_dataset):
         new_data.append({
             "chosen": actual_chosen,
             "rejected": actual_chosen,
-            "score_chosen": max(float(ex["first_score"]), float(ex["second_score"])),
-            "score_rejected": min(float(ex["first_score"]), float(ex["second_score"]))
+            "score_chosen": max(float(ex["first_score"]), float(ex["second_score"])) * 9 + 1,
+            "score_rejected": min(float(ex["first_score"]), float(ex["second_score"])) * 9 + 1
         })
 
     return new_data
