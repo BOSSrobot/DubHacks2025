@@ -39,7 +39,8 @@ model, tokenizer = FastModel.from_pretrained(
 model: PeftModel = FastLanguageModel.get_peft_model(
     model,
     r=16,
-    target_modules=["q_proj", "k_proj", "v_proj", "o_proj"],
+    target_modules=["q_proj", "k_proj", "v_proj", "o_proj",
+                      "gate_proj", "up_proj", "down_proj",],
     lora_alpha=16,
     lora_dropout=0,
     bias="none",
