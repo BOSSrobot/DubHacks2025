@@ -408,7 +408,7 @@ if __name__ == "__main__":
         try:
             # pulse_results = get_pulse_results(experiment_id, control_group, test_group, date=today)
             print(f"\n✓ Successfully retrieved pulse results")
-            print(pulse_results)
+            # print(pulse_results)
         except ValueError as e:
             print(f"⚠ No pulse results available: {e}")
         except Exception as e:
