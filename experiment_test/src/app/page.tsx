@@ -9,7 +9,7 @@ export default function Home() {
   const buttonText = experiment.get('button_text', 'buy noww');
 
   const handleClick = () => {
-    client.logEvent("button_clicked"); 
+    client.logEvent("button_clicked");
   };
 
   return (

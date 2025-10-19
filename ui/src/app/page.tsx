@@ -38,7 +38,7 @@ const page = () => {
     <div className="min-h-screen bg-white">
       {/* Header */}
       <header className="border-b border-gray-300">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center gap-1">
+        <div className="max-w-xl mx-auto px-6 py-4 flex items-center gap-1">
           <span className="text-4xl font-light">Flywheel</span>
           <Bird strokeWidth={.7} className="w-11 h-11" />
         </div>
