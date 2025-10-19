@@ -151,7 +151,12 @@ const page = () => {
   useEffect(() => {
     fetch('http://localhost:8080/api/abtests')
       .then(response => response.json())
-      .then(data => setAbTests(data))
+      .then(data => {
+        setAbTests(data)
+        if (data.length > 0) {
+          setSelectedTestSet(data[0].id)
+        }
+      })
       .catch(error => console.error('Error fetching A/B tests:', error))
 
     fetch('http://localhost:8080/api/basemodels')
@@ -324,7 +329,7 @@ const page = () => {
                     Loss: {isBaseModel ? '--' : (lossData.length > 0 ? lossData[lossData.length - 1].loss : 0)}
                   </div>
                 </div>
-                <div className="w-full h-76 p-6 pr-12">
+                <div className="w-full h-76 p-6 pr-20">
                   {isBaseModel ? (
                     <div className="h-full flex items-center justify-center">
                       <p className="text-gray-500 font-light text-lg">Foundational Models Do Not Have Loss Function</p>
