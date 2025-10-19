@@ -6,7 +6,10 @@ from dotenv import load_dotenv
 from datetime import datetime
 from datasets import Dataset, DatasetDict
 
-load_dotenv('.env.local')
+# Load .env.local from project root (parent of scripts directory)
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+env_path = os.path.join(project_root, '.env.local')
+load_dotenv(env_path)
 current_time_ms = 1760873478629
 
 def get_experiment(experiment_id: str) -> Dict[str, Any]:
@@ -119,8 +122,8 @@ def get_experiment_pairs(experiment_name: str, params_to_absolute_count, experim
 
     description_to_params = {}
 
-    for k, v in experiment_to_params.items():
-        print(k, ": ", v)
+    # for k, v in experiment_to_params.items():
+    #     print(k, ": ", v)
 
     response = requests.get(url, headers=headers)
     json = response.json()
@@ -141,11 +144,11 @@ def get_experiment_pairs(experiment_name: str, params_to_absolute_count, experim
                 for i in range(len(experiment_to_params[experiment_name])):
                     param = experiment_to_params[experiment_name][i]
                     # print(param)
-                    contained_in_experiment_params = True
+                    contained_in_experiment_params = False
                     for tup in param:
                         # print(tup)
-                        if tup not in params:
-                            contained_in_experiment_params = False
+                        if tup in params:
+                            contained_in_experiment_params = True
                             break
                     if contained_in_experiment_params:
                         params = param
@@ -182,7 +185,7 @@ def get_experiment_pairs(experiment_name: str, params_to_absolute_count, experim
     else:
         final_pairs.append((options[0], options[1]))
 
-    # print(f"Final pairs: {final_pairs}")
+    print(f"Final pairs: {final_pairs}")
     
     dataset_pairs = []
     for pair in final_pairs:
@@ -197,7 +200,7 @@ def get_experiment_pairs(experiment_name: str, params_to_absolute_count, experim
         second_score = params_to_absolute_count.get(second_params, 0)
         total = first_score + second_score
         if total == 0:
-            # print(f"Total is 0 for {first_option} and {second_option}")
+            print(f"Total is 0 for {first_option} and {second_option}")
             continue
         dataset_pairs.append({
             "first_option": first_option,
@@ -208,11 +211,15 @@ def get_experiment_pairs(experiment_name: str, params_to_absolute_count, experim
     return dataset_pairs
 
 whitelist_experiments = [
-    "experiment_-90156b26-0064-47b1-90aa-1705ee162d32"
+    "experiment_-90156b26-0064-47b1-90aa-1705ee162d32",
+    "husky-hoodie-form-test-d1750280",
+    "husky-hoodie-form-test-bdf7e5eb",
 ]
 
 hardcoded_experiment_to_category = {
     "experiment_-90156b26-0064-47b1-90aa-1705ee162d32": "buy_button"
+    # "husky-hoodie-form-test-d1750280": "buy_button",
+    # "husky-hoodie-form-test-bdf7e5eb": "buy_button",
 }
 
 def get_saved_categories():
@@ -236,7 +243,8 @@ def get_saved_categories():
     
     return saved_categories
 
-already_saved_categories = get_saved_categories()
+already_saved_categories = ["buy_button"]
+# already_saved_categories = get_saved_categories()
 # print(f"Already saved categories: {already_saved_categories}")
 
 # should aggregate all the events into categories with a name and pairwise 
@@ -254,12 +262,11 @@ def aggregate_into_categories(event_list):
         experiment_name = event.get('value', '')
         if (experiment_name == '' or experiment_name not in whitelist_experiments) and int(event.get('timestamp', 0)) < current_time_ms:
             continue
-
         metadata = event.get('metadata', {})
         if not metadata:
             continue
 
-        experiment_category = experiment_name.split('-')[0]
+        experiment_category = experiment_name.split('-')[2]
         if experiment_category not in category_to_experiments:
             # print(f"Adding experiment category: {experiment_category}")
             category_to_experiments[experiment_category] = [experiment_name]
@@ -284,17 +291,17 @@ def aggregate_into_categories(event_list):
     categories = []
     for category, experiment_name in category_to_experiments.items():
         pairs_dataset = []
+        print(f"Category: {category}")
+        print(f"Experiment names: {experiment_name}")
         if category in already_saved_categories:
             continue
         for experiment in experiment_name:
-            if experiment in whitelist_experiments:
-                if experiment in hardcoded_experiment_to_category:
-                    category = hardcoded_experiment_to_category[experiment]
-                print(f"Getting pairs for experiment: {experiment}")
-                pairs_dataset.extend(get_experiment_pairs(experiment, params_to_absolute_count, experiment_to_params))
+            if experiment in hardcoded_experiment_to_category:
+                category = hardcoded_experiment_to_category[experiment]
+            pairs_dataset.extend(get_experiment_pairs(experiment, params_to_absolute_count, experiment_to_params))
             
         if category in already_saved_categories:
-            print(f"Category {category} already saved, skipping")
+            # print(f"Category {category} already saved, skipping")
             continue
 
         if len(pairs_dataset) > 0:
@@ -346,7 +353,7 @@ def convert(pairs_dataset):
 
         new_data.append({
             "chosen": actual_chosen,
-            "rejected": actual_chosen,
+            "rejected": actual_rejected,
             "score_chosen": max(float(ex["first_score"]), float(ex["second_score"])),
             "score_rejected": min(float(ex["first_score"]), float(ex["second_score"]))
         })
@@ -356,6 +363,11 @@ def convert(pairs_dataset):
 
 
 if __name__ == "__main__":
+    print("=" * 60)
+    print("Starting Data Pull from Statsig")
+    print(f"Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print("=" * 60)
+    
     use_event_list = True
     # experiment_id = input("Enter experiment ID: ").strip()
     
@@ -373,23 +385,28 @@ if __name__ == "__main__":
     today = datetime.now().strftime('%Y-%m-%d')
 
     if use_event_list:
+        print("\nFetching event list from Statsig...")
         # try: 
         event_list = get_all_events(True)
-        # print(f"\n✓ Successfully retrieved event list")
-        # print(f"Number of events: {len(event_list)}")
+        print(f"✓ Successfully retrieved {len(event_list)} events")
 
+        print("\nAggregating events into categories...")
         multi_pairs_dataset, categories = aggregate_into_categories(event_list)
+        print(f"✓ Created {len(categories)} categories: {', '.join(categories)}")
+        
         for category, pairs_dataset in zip(categories, multi_pairs_dataset):
-            print(f"Number of pairs dataset: {len(pairs_dataset)}")
+            print(f"\n--- Processing category: {category} ---")
+            print(f"Number of pairs in dataset: {len(pairs_dataset)}")
 
             for my_d in pairs_dataset: 
                 if "prompt" not in my_d:
                     my_d['prompt'] = "Template prompt. DO NOT USE"
-                    print("ISSUE")
+                    print("⚠ Warning: Missing prompt in dataset entry")
 
-            
+            print("Converting to HuggingFace format...")
             hf_dataset = convert(pairs_dataset)
 
+            print("Creating train and validation datasets...")
             train_dataset = Dataset.from_list(hf_dataset)
             validation_dataset = Dataset.from_list([hf_dataset[0]])
             
@@ -397,9 +414,16 @@ if __name__ == "__main__":
                 "train": train_dataset, 
                 "validation": validation_dataset
             })
-                
+            
+            print(f"Pushing dataset to HuggingFace Hub: BOSSrobot343/dubhacks-{category}")
             dataset.push_to_hub(f"BOSSrobot343/dubhacks-{category}")
+            print(f"✓ Successfully pushed dataset for category: {category}")
 
+        print("\n" + "=" * 60)
+        print("Data Pull Completed Successfully")
+        print(f"Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        print("=" * 60)
+        
         # except ValueError as e:
         #     print(f"⚠ No event list available: {e}")
         # except Exception as e:
