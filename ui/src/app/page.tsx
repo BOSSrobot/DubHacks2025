@@ -14,13 +14,26 @@ const TestItem = ({ name, description, totalTests, avgImprovement, isSelected, o
 }) => (
   <div 
     onClick={onClick}
-    className={`mx-2 my-2 p-4 bg-white border rounded-lg cursor-pointer transition-all duration-200 ${
+    className={`mx-2 my-2 p-4 bg-white border rounded-lg cursor-pointer transition-all duration-200 relative ${
       isSelected 
         ? 'border-gray-600 bg-gray-50 shadow-sm' 
         : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
     }`}
   >
-    <div className="mb-2">
+    {/* Circular Checkbox */}
+    <div className={`absolute top-3 right-3 w-5 h-5 rounded-full border-2 transition-all ${
+      isSelected 
+        ? 'border-gray-600 bg-gray-600' 
+        : 'border-gray-300'
+    }`}>
+      {isSelected && (
+        <svg className="w-full h-full text-white p-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+        </svg>
+      )}
+    </div>
+    
+    <div className="mb-2 pr-8">
       <p className="font-medium text-gray-900 mb-1">{name}</p>
       <p className="text-sm font-light text-gray-500">{description}</p>
     </div>
@@ -112,8 +125,9 @@ const page = () => {
     epoch: number;
     loss: number;
   }>>([])
-  const [selectedModel, setSelectedModel] = useState<string>('flywheel-v1.4')
-  const [selectedTestSet, setSelectedTestSet] = useState<number | null>(null)
+  const [selectedModel, setSelectedModel] = useState<string | null>(null)
+  const [selectedTestSets, setSelectedTestSets] = useState<number[]>([])
+  const [lastClickedTestSet, setLastClickedTestSet] = useState<number | null>(null)
   const [lastClicked, setLastClicked] = useState<'model' | 'testSet'>('model')
   const [isTraining, setIsTraining] = useState(false)
   const [progress, setProgress] = useState(0)
@@ -121,16 +135,13 @@ const page = () => {
 
   const isBaseModel = baseModels.some(model => model.modelName === selectedModel)
   
-  const selectedTestSetData = abTests.find(testSet => testSet.id === selectedTestSet)
+  const selectedTestSetData = abTests.find(testSet => testSet.id === lastClickedTestSet)
 
   useEffect(() => {
     fetch('http://localhost:8080/api/abtests')
       .then(response => response.json())
       .then(data => {
         setAbTests(data)
-        if (data.length > 0) {
-          setSelectedTestSet(data[0].id)
-        }
       })
       .catch(error => console.error('Error fetching A/B tests:', error))
 
@@ -266,9 +277,14 @@ const page = () => {
                 description={test.description}
                 totalTests={test.totalTests}
                 avgImprovement={test.avgImprovement}
-                isSelected={selectedTestSet === test.id}
+                isSelected={selectedTestSets.includes(test.id)}
                 onClick={() => {
-                  setSelectedTestSet(test.id)
+                  setSelectedTestSets(prev => 
+                    prev.includes(test.id) 
+                      ? prev.filter(id => id !== test.id)
+                      : [...prev, test.id]
+                  )
+                  setLastClickedTestSet(test.id)
                   setLastClicked('testSet')
                 }}
               />
@@ -362,7 +378,7 @@ const page = () => {
                     )}
                     {!isTraining && !showSuccess && (
                       <span className="text-gray-500">
-                        Ready to tune
+                        {!selectedModel ? 'Select a model first' : selectedTestSets.length === 0 ? 'Select at least one test set' : 'Ready to tune!'}
                       </span>
                     )}
                   </p>
@@ -378,7 +394,7 @@ const page = () => {
                 
                 <button 
                   onClick={handleFineTune}
-                  disabled={isTraining}
+                  disabled={isTraining || !selectedModel || selectedTestSets.length === 0}
                   className="w-full bg-black text-white py-3.5 text-base font-light rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isTraining ? 'Tuning...' : 'Fine Tune'}
