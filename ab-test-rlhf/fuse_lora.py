@@ -34,29 +34,11 @@ def main():
     print("Loading LoRA adapter...")
     model = PeftModel.from_pretrained(base_model, lora_model)
 
-    if isinstance(model, PeftModel):
-        print("Merging LoRA weights into the base model...")
-        
-        # Use safe merging that handles MoE properly
-        fused_model = model.merge_and_unload(
-            progressbar=True,
-            safe_merge=True  # This helps with MoE models
-        )
-        
-        # Ensure all state dict keys are present
-        state_dict = fused_model.state_dict()
-        print(f"Total parameters in fused model: {len(state_dict)}")
-    else:
-        fused_model = model
-
-    # Save with explicit configuration
-    print(f"Saving fused model to {output_dir}...")
-    fused_model.save_pretrained(
+    model.save_pretrained_merged(
         output_dir,
-        safe_serialization=True,
-        max_shard_size="5GB"
-    )
-    tokenizer.save_pretrained(output_dir)
+        tokenizer,
+        save_method="merged_16bit",  # This handles dequantization properly
+    ) 
 
 if __name__ == "__main__":
     main()

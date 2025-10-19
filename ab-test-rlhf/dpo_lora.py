@@ -7,16 +7,39 @@ import datetime
 from peft import PeftModel
 import os
 import gc
+import argparse
 
 def main():
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description='DPO LoRA Fine-tuning Script')
+    parser.add_argument('--dataset-name', 
+                       type=str, 
+                       default="BOSSrobot343/dubhacks-buy_button",
+                       help='Name of the dataset to use for training (default: BOSSrobot343/dubhacks-buy_button)')
+    parser.add_argument('--model-name',
+                       type=str,
+                       default=None,
+                       help='Name for the output model (default: uses timestamp)')
+    
+    args = parser.parse_args()
+    
+    print(f"Using dataset: {args.dataset_name}")
+    print(f"Model name: {args.model_name}")
     max_seq_length = 1024 # Supports RoPE Scaling internally, so choose any!
-    dataset = load_dataset("trl-lib/ultrafeedback_binarized", split = "train[:1000]")
-    timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    output_dir = f"outputs/{timestamp}"
+    dataset = load_dataset(args.dataset_name)
+    train_dataset = dataset["train"]
+    eval_dataset = dataset["validation"]
+    
+    # Use model name or timestamp for output directory
+    if args.model_name:
+        output_dir = f"outputs/{args.model_name}"
+    else:
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        output_dir = f"outputs/{timestamp}"
     # dataset = load_dataset("imdb", split="train[:1000]")
-    # eval_dataset = load_dataset("trl-lib/ultrafeedback_binarized", split = "test")
+    eval_dataset = load_dataset("trl-lib/ultrafeedback_binarized", split = "test")
     # eval_dataset = load_dataset("imdb", split="test[:1000]")
-
+    print(dataset)
 
     # 4bit pre quantized models we support for 4x faster downloading + no OOMs.
     # fourbit_models = [
@@ -40,8 +63,7 @@ def main():
     model: PeftModel = FastLanguageModel.get_peft_model(
         model,
         r=16,
-        target_modules=["q_proj", "k_proj", "v_proj", "o_proj",
-                        "gate_proj", "up_proj", "down_proj",],
+        target_modules=["q_proj", "k_proj", "v_proj", "o_proj",],
         lora_alpha=16,
         lora_dropout=0,
         bias="none",
@@ -54,15 +76,16 @@ def main():
 
     trainer = DPOTrainer(
         model=model,
-        train_dataset=dataset,
+        train_dataset=train_dataset,
+        eval_dataset=train_dataset, 
         tokenizer=tokenizer,
         args=DPOConfig(
             max_seq_length=max_seq_length,
             
             # VRAM optimization: Increase batch size, reduce gradient accumulation
-            per_device_train_batch_size=8,  # Increased from 8
+            per_device_train_batch_size=2,  # Increased from 8
             gradient_accumulation_steps=1,
-            
+
             # Reduce memory from optimizer
             optim="adamw_8bit",  # Good choice, keep this
             
@@ -89,13 +112,13 @@ def main():
             report_to="wandb",
             
             # Training params
-            warmup_steps=0,
-            max_steps=3,
-            learning_rate=1e-5,
+            warmup_steps=2,
+            max_steps=20,
+            learning_rate=2e-5,
             seed=3407,
             
             # DPO-specific: Reduce reference model memory
-            beta=0.1,  # DPO beta parameter
+            beta=0.2,  # DPO beta parameter
             generate_during_eval=False,  # Disable generation during eval
             
             # Memory cleanup
@@ -129,6 +152,7 @@ def main():
 
     # Save with explicit configuration
     print(f"Saving fused model to {fused_model_dir}...")
+    # fused_model = fused_model.to(torch.bfloat16)
     fused_model.save_pretrained(
         fused_model_dir,
         safe_serialization=True,
@@ -142,5 +166,5 @@ def main():
     # (3) Adding an evaluation loop / OOMs
     # (4) Customized chat templates
 
-if __name__ == "main":
+if __name__ == "__main__":
     main()

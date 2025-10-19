@@ -3,9 +3,10 @@ import time
 import requests
 import os
 import sys
+import datetime
 
 class VLLMServerConda:
-    def __init__(self, model_name, model_path, conda_env_name, host="0.0.0.0", port=8001, cuda_visible_devices=None):
+    def __init__(self, model_name, model_path, log_file_path, conda_env_name="vllm", host="0.0.0.0", port=8002, cuda_visible_devices="1"):
         self.model_name = model_name
         self.model_path = model_path
         self.conda_env_name = conda_env_name
@@ -13,9 +14,11 @@ class VLLMServerConda:
         self.port = port
         self.cuda_visible_devices = cuda_visible_devices
         self.process = None
+        self.log_file_path = log_file_path
+        self.log_file_handle = None
         
         # Detect conda installation
-        self.conda_base = os.environ.get('CONDA_PREFIX')
+        self.conda_base = "/home/user/miniconda3"
         if not self.conda_base:
             # Try common locations
             for path in [os.path.expanduser('~/anaconda3'), 
@@ -27,6 +30,12 @@ class VLLMServerConda:
         
         if not self.conda_base:
             raise RuntimeError("Could not find conda installation")
+        
+        # Create log file path
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        logs_dir = os.path.join(os.getcwd(), "logs")
+        os.makedirs(logs_dir, exist_ok=True)
+        self.log_file_path = os.path.join(logs_dir, f"vllm_{timestamp}.log")
     
     def get_vllm_path(self):
         """Get path to vllm executable in conda environment"""
@@ -62,14 +71,28 @@ class VLLMServerConda:
             env['CUDA_VISIBLE_DEVICES'] = str(self.cuda_visible_devices)
             print(f"Setting CUDA_VISIBLE_DEVICES={self.cuda_visible_devices}")
         
+        # Open log file for writing
+        self.log_file_handle = open(self.log_file_path, 'w', buffering=1)  # Line buffered
+        
+        # Write initial info to log file
+        self.log_file_handle.write(f"=== vLLM Server Started at {datetime.datetime.now()} ===\n")
+        self.log_file_handle.write(f"Model: {self.model_name}\n")
+        self.log_file_handle.write(f"Model path: {self.model_path}\n")
+        self.log_file_handle.write(f"Host: {self.host}\n")
+        self.log_file_handle.write(f"Port: {self.port}\n")
+        self.log_file_handle.write(f"CUDA devices: {self.cuda_visible_devices}\n")
+        self.log_file_handle.write(f"Command: {' '.join(cmd)}\n")
+        self.log_file_handle.write("=" * 50 + "\n\n")
+        
         print(f"Starting vLLM server from conda env '{self.conda_env_name}'")
         print(f"Command: {' '.join(cmd)}")
+        print(f"Logging to: {self.log_file_path}")
         
         self.process = subprocess.Popen(
             cmd,
             env=env,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            stdout=self.log_file_handle,
+            stderr=subprocess.STDOUT,  # Redirect stderr to stdout so all output goes to log
             text=True
         )
         
@@ -111,18 +134,53 @@ class VLLMServerConda:
                 print("Force killing server...")
                 self.process.kill()
                 self.process.wait()
+        
+        # Close log file handle if open
+        if self.log_file_handle and not self.log_file_handle.closed:
+            self.log_file_handle.write(f"\n=== vLLM Server Stopped at {datetime.datetime.now()} ===\n")
+            self.log_file_handle.close()
     
     def get_logs(self):
-        """Get server logs"""
-        if self.process:
-            return self.process.stdout.read(), self.process.stderr.read()
-        return None, None
+        """Get server logs from log file"""
+        if self.log_file_path and os.path.exists(self.log_file_path):
+            try:
+                with open(self.log_file_path, 'r') as f:
+                    content = f.read()
+                return content, None
+            except Exception as e:
+                return None, f"Error reading log file: {str(e)}"
+        return None, "No log file available"
+    
+    def get_log_file_path(self):
+        """Get the path to the log file"""
+        return self.log_file_path
+    
+    def get_recent_logs(self, lines=50):
+        """Get the last N lines from the log file"""
+        if self.log_file_path and os.path.exists(self.log_file_path):
+            try:
+                with open(self.log_file_path, 'r') as f:
+                    all_lines = f.readlines()
+                    recent_lines = all_lines[-lines:] if len(all_lines) > lines else all_lines
+                    return ''.join(recent_lines), None
+            except Exception as e:
+                return None, f"Error reading log file: {str(e)}"
+        return None, "No log file available"
+    
+    def is_running(self):
+        """Check if the server process is still running"""
+        if not self.process:
+            return False
+        return self.process.poll() is None
     
     def __enter__(self):
         return self
     
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.stop()
+        # Ensure log file is properly closed
+        if self.log_file_handle and not self.log_file_handle.closed:
+            self.log_file_handle.close()
 
 
 # Usage example

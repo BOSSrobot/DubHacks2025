@@ -6,3 +6,4 @@ wandb
 .env.local
 trainer_output
 plzwork
+logs
