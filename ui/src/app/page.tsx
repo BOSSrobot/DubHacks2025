@@ -4,34 +4,66 @@ import React, { useState } from 'react'
 import { Bird } from 'lucide-react'
 
 const abTests = [
-  { id: 1, name: 'Hero CTA Button', variant: 'A vs B', winner: 'B' },
-  { id: 2, name: 'Navigation Layout', variant: 'A vs B', winner: 'A' },
-  { id: 3, name: 'Color Scheme', variant: 'A vs B', winner: 'B'},
-  { id: 4, name: 'Pricing Display', variant: 'A vs B', winner: 'B'},
+  { id: 1, name: 'Hero CTA Button', variant: 'A vs B', winner: 'B', improvement: '+12.3%', conversions: 287, visitors: 2431 },
+  { id: 2, name: 'Navigation Layout', variant: 'A vs B', winner: 'A', improvement: '+8.7%', conversions: 412, visitors: 4102 },
+  { id: 3, name: 'Color Scheme', variant: 'A vs B', winner: 'B', improvement: '+15.2%', conversions: 198, visitors: 1823 },
+  { id: 4, name: 'Pricing Display', variant: 'A vs B', winner: 'B', improvement: '+9.4%', conversions: 121, visitors: 1089 },
 ]
 
 const fineTunes = [
-  { id: 1, modelName: 'flywheel-v1.2', timestamp: '2025-10-19 14:23:15' },
-  { id: 2, modelName: 'flywheel-v1.1', timestamp: '2025-10-18 09:42:33' },
-  { id: 3, modelName: 'flywheel-v1.0', timestamp: '2025-10-18 8:15:08' },
+  { id: 0, modelName: 'flywheel-v1.4', timestamp: '2025-10-19 14:23:15', status: 'active' },
+  { id: 1, modelName: 'flywheel-v1.3', timestamp: '2025-10-19 14:23:15', status: 'archived' },
+  { id: 2, modelName: 'flywheel-v1.2', timestamp: '2025-10-19 14:23:15', status: 'archived' },
+  { id: 3, modelName: 'flywheel-v1.1', timestamp: '2025-10-18 09:42:33', status: 'archived' },
+  { id: 4, modelName: 'flywheel-v1.0', timestamp: '2025-10-18 8:15:08', status: 'archived' },
 ]
 
-const TestItem = ({ name, variant, winner }: { name: string; variant: string; winner: string }) => (
-  <div className="py-4 px-3 flex justify-between items-center border-b border-gray-200 last:border-0 hover:bg-gray-50 transition-colors rounded">
-    <div className="flex-1">
-      <p className="font-light text-gray-900">{name}</p>
-      <p className="text-sm font-light text-gray-500">{variant}</p>
+const TestItem = ({ name, variant, winner, improvement, conversions, visitors }: { 
+  name: string; 
+  variant: string; 
+  winner: string;
+  improvement: string;
+  conversions: number;
+  visitors: number;
+}) => (
+  <div className="py-4 px-3 flex flex-col gap-3 border-b border-gray-200 last:border-0 hover:bg-gray-50 transition-colors rounded">
+    <div className="flex justify-between items-start">
+      <div className="flex-1">
+        <p className="font-light text-gray-900">{name}</p>
+        <p className="text-sm font-light text-gray-500">{variant}</p>
+      </div>
+      <div className="text-sm font-light text-gray-600">
+        Winner: <span className="text-gray-900">{winner}</span>
+      </div>
     </div>
-    <div className="text-sm font-light text-gray-600">
-      Winner: <span className="text-gray-900">{winner}</span>
+    <div className="flex gap-4 text-xs font-light text-gray-600">
+      <div className="flex items-center gap-1">
+        <span className="text-green-600 font-medium">{improvement}</span>
+        <span>improvement</span>
+      </div>
+      <div>
+        <span className="text-gray-900">{conversions}</span> conversions
+      </div>
+      <div>
+        <span className="text-gray-900">{visitors.toLocaleString()}</span> visitors
+      </div>
     </div>
   </div>
 )
 
-const FineTuneItem = ({ modelName, timestamp }: { modelName: string; timestamp: string }) => (
-  <div className="py-3 flex justify-between items-center border-b border-gray-200 last:border-0">
-    <p className="font-light text-gray-900">{modelName}</p>
-    <p className="text-xs font-light text-gray-500 bg-gray-100 px-2 py-1 rounded">{timestamp}</p>
+const FineTuneItem = ({ modelName, timestamp, status }: { 
+  modelName: string; 
+  timestamp: string;
+  status: string;
+}) => (
+  <div className="py-4 px-3 flex justify-between items-center border-b border-gray-200 last:border-0 hover:bg-gray-50 transition-colors rounded">
+    <div className="flex items-center gap-2">
+      <p className="font-light text-gray-900">{modelName}</p>
+      {status === 'active' && (
+        <span className="text-xs font-light bg-green-100 text-green-700 px-2 py-0.5 rounded">Active</span>
+      )}
+    </div>
+    <p className="text-xs font-light text-gray-500">{timestamp}</p>
   </div>
 )
 
@@ -81,7 +113,15 @@ const page = () => {
             <h2 className="text-xl font-light mb-6 text-gray-900 pb-2 border-b border-gray-100">A/B Tests</h2>
             <div className="space-y-1">
               {abTests.map((test) => (
-                <TestItem key={test.id} name={test.name} variant={test.variant} winner={test.winner} />
+                <TestItem 
+                  key={test.id} 
+                  name={test.name} 
+                  variant={test.variant} 
+                  winner={test.winner}
+                  improvement={test.improvement}
+                  conversions={test.conversions}
+                  visitors={test.visitors}
+                />
               ))}
             </div>
           </div>
@@ -91,7 +131,12 @@ const page = () => {
             <h2 className="text-xl font-light mb-6 text-gray-900 pb-2 border-b border-gray-100">Fine Tune History</h2>
             <div className="space-y-1">
               {fineTunes.map((tune) => (
-                <FineTuneItem key={tune.id} modelName={tune.modelName} timestamp={tune.timestamp} />
+                <FineTuneItem 
+                  key={tune.id} 
+                  modelName={tune.modelName} 
+                  timestamp={tune.timestamp}
+                  status={tune.status}
+                />
               ))}
             </div>
           </div>
