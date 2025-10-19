@@ -4,4 +4,5 @@ ufb_tok_qwen2p5_2048
 unsloth_compiled_cache
 wandb
 .env.local
+trainer_output
 plzwork

@@ -27,7 +27,7 @@ class ModelConfig(BaseModel):
     conda_env_name: str = "vllm"
     host: str = "0.0.0.0"
     port: int = 8001
-    cuda_visible_devices: Optional[str] = None
+    cuda_visible_devices: Optional[str] = "1"
     tensor_parallel_size: Optional[int] = 1
     gpu_memory_utilization: Optional[float] = 0.9
 
@@ -160,8 +160,6 @@ async def list_available_models():
     # Common model directories to scan
     model_directories = [
         "./outputs/*/fused_model",
-        "./trainer_output/checkpoint-*/",
-        "./ab-test-rlhf/outputs/checkpoint-*/"
     ]
     
     available_models = []
