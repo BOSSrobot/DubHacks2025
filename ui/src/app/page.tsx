@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Bird, Cog } from 'lucide-react'
+import { Cog } from 'lucide-react'
 import { Line, LineChart, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts"
 
 const TestItem = ({ name, variant, winner, improvement, conversions, visitors }: { 
@@ -12,7 +12,7 @@ const TestItem = ({ name, variant, winner, improvement, conversions, visitors }:
   conversions: number;
   visitors: number;
 }) => (
-  <div className="mx-2 my-2 p-4 bg-white border border-gray-200 rounded-lg transition-all duration-200">
+  <div className="mx-2 my-2 p-4 bg-white border border-gray-200 rounded-lg transition-all duration-200 hover:border-gray-300 hover:shadow-sm cursor-pointer">
     <div className="flex justify-between items-start mb-3">
       <div className="flex-1">
         <p className="font-medium text-gray-900 mb-1">{name}</p>
@@ -37,19 +37,16 @@ const TestItem = ({ name, variant, winner, improvement, conversions, visitors }:
   </div>
 )
 
-const FineTuneItem = ({ modelName, timestamp, status }: { 
+const FineTuneItem = ({ modelName, timestamp}: { 
   modelName: string; 
   timestamp: string;
   status: string;
 }) => (
-  <div className="mx-2 my-2 p-4 bg-white border border-gray-200 rounded-lg">
-    <div className="flex items-start justify-between mb-2">
+  <div className="mx-2 my-2 p-3 bg-white border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm cursor-pointer transition-all duration-200">
+    <div className="flex items-center justify-between">
       <p className="font-medium text-gray-900">{modelName}</p>
-      {status === 'active' && (
-        <span className="bg-green-50 text-green-700 px-2 py-1 rounded-md font-light text-xs border border-green-200">Active</span>
-      )}
+      <p className="text-xs font-light text-gray-500">{timestamp}</p>
     </div>
-    <p className="text-xs font-light text-gray-500">{timestamp}</p>
   </div>
 )
 
@@ -62,6 +59,12 @@ const page = () => {
     improvement: string;
     conversions: number;
     visitors: number;
+  }>>([])
+  const [baseModels, setBaseModels] = useState<Array<{
+    id: number;
+    modelName: string;
+    timestamp: string;
+    status: string;
   }>>([])
   const [fineTunes, setFineTunes] = useState<Array<{
     id: number;
@@ -82,6 +85,13 @@ const page = () => {
       .then(response => response.json())
       .then(data => setAbTests(data))
       .catch(error => console.error('Error fetching A/B tests:', error))
+
+    fetch('http://localhost:8080/api/basemodels')
+      .then(response => response.json())
+      .then(data => setBaseModels(data))
+      .catch(error => {
+        console.error('Error fetching base models:', error)
+      })
 
     fetch('http://localhost:8080/api/finetunes')
       .then(response => response.json())
@@ -122,8 +132,7 @@ const page = () => {
       <header className="bg-white border-b border-gray-200">
         <div className="mx-auto px-8 py-5 flex items-center justify-between max-w-[1800px]">
           <div className="flex items-center gap-1">
-            <span className="text-3xl font-light">Flywheel</span>
-            <Bird strokeWidth={.7} className="w-9 h-9" />
+            <img src="/logo.png" alt="Flywheel" className="h-10" />
           </div>
           <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
           </div>
@@ -132,7 +141,44 @@ const page = () => {
 
       {/* Main Content */}
       <div className="flex h-[calc(100vh-88px)] max-w-[1800px] mx-auto">
-        {/* Left Sidebar - A/B Tests */}
+        {/* Left Sidebar - Models */}
+        <div className="w-96 flex-shrink-0 bg-white border-r border-gray-200 flex flex-col">
+          {/* Base Models Section */}
+          <div className="flex-shrink-0">
+            <div className="bg-white border-b border-gray-200">
+              <h2 className="text-xl font-light text-gray-900 pt-3 pb-2 px-5">Base Models</h2>
+            </div>
+            <div className="p-2">
+              {baseModels.map((model) => (
+                <FineTuneItem 
+                  key={model.id} 
+                  modelName={model.modelName} 
+                  timestamp={model.timestamp}
+                  status={model.status}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Tuned Models Section */}
+          <div className="flex-1 flex flex-col min-h-0">
+            <div className="bg-white border-b border-gray-200">
+              <h2 className="text-xl font-light text-gray-900 pt-3 pb-2 px-5">Tuned Models</h2>
+            </div>
+            <div className="p-2 overflow-y-auto flex-1 scrollbar-hide">
+              {fineTunes.map((tune) => (
+                <FineTuneItem 
+                  key={tune.id} 
+                  modelName={tune.modelName} 
+                  timestamp={tune.timestamp}
+                  status={tune.status}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Middle Sidebar - A/B Tests */}
         <div className="w-96 flex-shrink-0 bg-white border-r border-gray-200 overflow-y-auto ">
           <div className="sticky top-0 bg-white z-10">
             <h2 className="text-xl font-light text-gray-900 pt-5 pb-2 px-5">A/B Tests</h2>
@@ -152,7 +198,7 @@ const page = () => {
           </div>
         </div>
 
-        {/* Center Panel - Graph and Fine Tune */}
+        {/* Right Panel - Graph and Fine Tune */}
         <div className="flex-1 flex flex-col overflow-y-auto">
           <div className="p-6 space-y-6">
             {/* Loss Function Chart */}
@@ -228,23 +274,6 @@ const page = () => {
                 </button>
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* Right Sidebar - Fine Tune History */}
-        <div className="w-96 flex-shrink-0 bg-white border-l border-gray-200 overflow-y-auto">
-          <div className="sticky top-0 bg-white z-10">
-            <h2 className="text-xl font-light text-gray-900 pt-5 pb-2 px-5">Fine Tune History</h2>
-          </div>
-          <div className="p-2">
-            {fineTunes.map((tune) => (
-              <FineTuneItem 
-                key={tune.id} 
-                modelName={tune.modelName} 
-                timestamp={tune.timestamp}
-                status={tune.status}
-              />
-            ))}
           </div>
         </div>
       </div>

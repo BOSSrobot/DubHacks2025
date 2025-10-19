@@ -24,14 +24,23 @@ def get_ab_tests():
     ]
     return jsonify(ab_tests)
 
+@app.route('/api/basemodels', methods=['GET'])
+def get_base_models():
+    base_models = [
+        { 'id': 1, 'modelName': 'Qwen Coder 3', 'timestamp': 'Foundation model', 'status': 'active' },
+        { 'id': 2, 'modelName': 'Qwen 0.6B', 'timestamp': 'Foundation model', 'status': '' },
+        { 'id': 3, 'modelName': 'GPT OSS 20B', 'timestamp': 'Foundation model', 'status': '' },
+    ]
+    return jsonify(base_models)
+
 @app.route('/api/finetunes', methods=['GET'])
 def get_fine_tunes():
     fine_tunes = [
-        { 'id': 0, 'modelName': 'flywheel-v1.4', 'timestamp': '2025-10-19 14:23:15', 'status': 'active' },
-        { 'id': 1, 'modelName': 'flywheel-v1.3', 'timestamp': '2025-10-19 14:23:15', 'status': 'archived' },
-        { 'id': 2, 'modelName': 'flywheel-v1.2', 'timestamp': '2025-10-19 14:23:15', 'status': 'archived' },
-        { 'id': 3, 'modelName': 'flywheel-v1.1', 'timestamp': '2025-10-18 09:42:33', 'status': 'archived' },
-        { 'id': 4, 'modelName': 'flywheel-v1.0', 'timestamp': '2025-10-18 8:15:08', 'status': 'archived' },
+        { 'id': 0, 'modelName': 'flywheel-v1.4', 'timestamp': '2025-10-19 14:23:15', 'status': 'active'},
+        { 'id': 1, 'modelName': 'flywheel-v1.3', 'timestamp': '2025-10-19 14:23:15', 'status': ''},
+        { 'id': 2, 'modelName': 'flywheel-v1.2', 'timestamp': '2025-10-19 14:23:15', 'status': ''},
+        { 'id': 3, 'modelName': 'flywheel-v1.1', 'timestamp': '2025-10-18 09:42:33', 'status': ''},
+        { 'id': 4, 'modelName': 'flywheel-v1.0', 'timestamp': '2025-10-18 8:15:08', 'status': ''},
     ]
     return jsonify(fine_tunes)
 
