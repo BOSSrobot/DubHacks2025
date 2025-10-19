@@ -124,7 +124,7 @@ const page = () => {
   const selectedTestSetData = abTests.find(testSet => testSet.id === selectedTestSet)
 
   useEffect(() => {
-    fetch('http://localhost:8080/api/abtests')
+    fetch('http://127.0.0.1:8080/api/abtests')
       .then(response => response.json())
       .then(data => {
         setAbTests(data)
@@ -134,14 +134,14 @@ const page = () => {
       })
       .catch(error => console.error('Error fetching A/B tests:', error))
 
-    fetch('http://localhost:8080/api/basemodels')
+    fetch('http://127.0.0.1:8080/api/basemodels')
       .then(response => response.json())
       .then(data => setBaseModels(data))
       .catch(error => {
         console.error('Error fetching base models:', error)
       })
 
-    fetch('http://localhost:8080/api/finetunes')
+    fetch('http://127.0.0.1:8080/api/finetunes')
       .then(response => response.json())
       .then(data => setFineTunes(data))
       .catch(error => console.error('Error fetching fine tunes:', error))
@@ -150,7 +150,7 @@ const page = () => {
   // Fetch loss data whenever selected model changes (only for tuned models)
   useEffect(() => {
     if (!isBaseModel) {
-      fetch(`http://localhost:8080/api/lossdata?model=${selectedModel}`)
+      fetch(`http://127.0.0.1:8080/api/lossdata?model=${selectedModel}`)
         .then(response => response.json())
         .then(data => setLossData(data))
         .catch(error => console.error('Error fetching loss data:', error))
