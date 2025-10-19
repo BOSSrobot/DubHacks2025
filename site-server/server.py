@@ -5,16 +5,46 @@ import requests
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": ["http://159.26.94.16:3000","http://localhost:3000"]}})
 
-def extract_button_text(html_string):
-    """Extract text content from button HTML string."""
-    try:
-        start = html_string.find('>') + 1
-        end = html_string.find('</button>')
-        if start > 0 and end > 0:
-            return html_string[start:end].strip()
-        return 'Button'
-    except:
-        return 'Button'
+def extract_differences(option1, option2):
+    """Extract the key differences between two HTML options."""
+    import re
+    
+    def extract_attributes(html_string):
+        """Extract text content and style attributes from HTML."""
+        try:
+            text_match = re.search(r'>([^<]+)</', html_string)
+            text = text_match.group(1).strip() if text_match else ''
+            
+            # Extract backgroundColor from style attribute
+            color_match = re.search(r"backgroundColor:\s*['\"](\w+)['\"]", html_string)
+            color = color_match.group(1) if color_match else ''
+            
+            # Extract any other relevant attributes (could expand this)
+            return {'text': text, 'color': color}
+        except:
+            return {'text': '', 'color': ''}
+    
+    attrs1 = extract_attributes(option1)
+    attrs2 = extract_attributes(option2)
+    
+    # Build difference strings showing only what changed
+    differences = []
+    
+    if attrs1['text'] != attrs2['text']:
+        differences.append(f"text: '{attrs1['text']}' vs '{attrs2['text']}'")
+    
+    if attrs1['color'] != attrs2['color']:
+        differences.append(f"color: {attrs1['color']} vs {attrs2['color']}")
+    
+    # If both text and color differ, create a compact representation
+    if attrs1['text'] != attrs2['text'] and attrs1['color'] != attrs2['color']:
+        return f"{attrs1['color']} '{attrs1['text']}' vs {attrs2['color']} '{attrs2['text']}'"
+    elif attrs1['text'] != attrs2['text']:
+        return f"'{attrs1['text']}' vs '{attrs2['text']}'"
+    elif attrs1['color'] != attrs2['color']:
+        return f"{attrs1['color']} vs {attrs2['color']}"
+    else:
+        return f"{attrs1['text']} (identical)"
 
 def transform_ab_test_data(raw_data):
     """Transform raw A/B test data into frontend format."""
@@ -24,8 +54,11 @@ def transform_ab_test_data(raw_data):
         first_score = comparison.get('first_score', 0)
         second_score = comparison.get('second_score', 0)
         
-        first_text = extract_button_text(comparison.get('first_option', ''))
-        second_text = extract_button_text(comparison.get('second_option', ''))
+        # Extract differences between the two options
+        first_option = comparison.get('first_option', '')
+        second_option = comparison.get('second_option', '')
+        variant_text = extract_differences(first_option, second_option)
+        
         if first_score > second_score:
             winner = 'A'
             improvement_val = (first_score - second_score) * 100
@@ -41,7 +74,7 @@ def transform_ab_test_data(raw_data):
         test = {
             'id': 101 + idx,
             'name': f'Button Test {idx + 1}',
-            'variant': f'{first_text[:30]}... vs {second_text[:30]}...',
+            'variant': variant_text,
             'winner': winner,
             'improvement': improvement
         }
@@ -62,7 +95,7 @@ def transform_ab_test_data(raw_data):
     ]
     
     return test_groups
-'''
+
 @app.route('/api/abtests', methods=['GET'])
 def get_ab_tests():
     try:
@@ -76,71 +109,6 @@ def get_ab_tests():
     except requests.exceptions.RequestException as e:
         print(f"Error fetching from external API: {e}")
         return jsonify({'error': str(e)}), 500
-'''
-@app.route('/api/abtests', methods=['GET'])
-def get_ab_tests():
-    return jsonify([
-        {
-            'id': 1,
-            'name': 'E-Commerce Action Button Tests',
-            'description': 'Button copy and color variations for e-commerce purchase',
-            'totalTests': 10,
-            'avgImprovement': '+10.0%',
-            'tests': [
-                {
-                    'id': 1,
-                    'name': 'Button Test 1',
-                    'variant': 'Button A',
-                    'winner': 'A',
-                    'improvement': '+10.0%'
-                },
-                {
-                    'id': 2,
-                    'name': 'Button Test 2',
-                    'variant': 'Button B',
-                    'winner': 'B',
-                    'improvement': '+10.0%'
-                },
-                {
-                    'id': 3,
-                    'name': 'Button Test 3',
-                    'variant': 'Button C',
-                    'winner': 'Tie',
-                    'improvement': '0%'
-                }
-            ]
-        },
-        {
-            'id': 2,
-            'name': 'E-Commerce Action Button Tests 2',
-            'description': 'Button copy and color variations for e-commerce purchase',
-            'totalTests': 10,
-            'avgImprovement': '+10.0%',
-            'tests': [
-                {
-                    'id': 1,
-                    'name': 'Button Test 1',
-                    'variant': 'Button A',
-                    'winner': 'A',
-                    'improvement': '+10.0%'
-                },
-                {
-                    'id': 2,
-                    'name': 'Button Test 2',
-                    'variant': 'Button B',
-                    'winner': 'B',
-                    'improvement': '+10.0%'
-                },
-                {
-                    'id': 3,
-                    'name': 'Button Test 3',
-                    'variant': 'Button C',
-                    'winner': 'Tie',
-                    'improvement': '0%'
-                }
-            ]
-        }
-    ])
 
 @app.route('/api/basemodels', methods=['GET'])
 def get_base_models():
